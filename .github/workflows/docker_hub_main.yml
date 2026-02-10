@@ -1,0 +1,88 @@
+name: 🔐 Docker Hub - Production Release
+
+on:
+  workflow_dispatch:  # 仅手动触发，绝不自动运行
+    inputs:
+      version:
+        description: 'Override version'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  IMAGE_NAME: jonysun/wecom
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 必须获取完整历史才能读取 tags
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}  # Docker Hub Access Token
+
+      - name: Extract version (auto-detect from Git tag)
+        id: get_version
+        run: |
+          MANUAL_VERSION="${{ github.event.inputs.version }}"
+          
+          if [ -n "$MANUAL_VERSION" ]; then
+            # 使用手动输入的版本（去掉 v 前缀）
+            VERSION="${MANUAL_VERSION#v}"
+            echo "Using manual version: $VERSION"
+          else
+            # 自动检测最近的 Git 标签（如 v1.2.3）
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            
+            if [ -z "$LATEST_TAG" ]; then
+              echo "❌ 错误：未检测到 Git 标签，且未提供手动版本"
+              echo "💡 请先创建标签（例如：git tag v1.0.0 && git push origin v1.0.0）"
+              echo "   或在触发 workflow 时填写 'version' 参数"
+              exit 1
+            fi
+            
+            VERSION="${LATEST_TAG#v}"  # 去掉 v 前缀 → 1.2.3
+            
+            # 安全校验：防止误用分支名
+            if [[ "$VERSION" == "main" || "$VERSION" == "master" || "$VERSION" == "dev" ]]; then
+              echo "❌ 错误：检测到的标签 '$LATEST_TAG' 不是有效版本号"
+              exit 1
+            fi
+            
+            echo "Auto-detected Git tag: $LATEST_TAG → Version: $VERSION"
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and push to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.version }}
+            ${{ env.IMAGE_NAME }}:latest
+
+      - name: Notify success via Telegram (optional)
+        if: success()
+        uses: appleboy/telegram-action@v1.0.0
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ✅ Docker 镜像推送成功
+            仓库: ${{ env.IMAGE_NAME }}
+            版本: ${{ steps.get_version.outputs.version }}"
+            Commit: ${{ github.sha }}
+            触发者: ${{ github.actor }}
+      
