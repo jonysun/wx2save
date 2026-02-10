@@ -48,8 +48,9 @@ COPY --from=builder /install /usr/local
 COPY . .
 
 # 创建必要的目录并设置权限
-# 使用非 root 用户运行更安全（可选，这里为了简单仍用 root，但创建目录是好习惯）
-RUN mkdir -p /app/app/logs /app/media_files /app/data
+# 使用非 root 用户运行更安全（可选，这里为了简单仍用# Create necessary directories
+RUN mkdir -p /app/data /app/logs /app/media_files && \
+    chmod 777 /app/data /app/logs /app/media_files
 
 # 复制入口脚本
 COPY entrypoint.sh .

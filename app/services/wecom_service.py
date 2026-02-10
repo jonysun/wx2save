@@ -237,6 +237,12 @@ def handle_customer_service_event(event_data, db: Session):
                 logger.info(f"More messages available for {open_kfid}, continuing sync...")
                 return handle_customer_service_event(event_data, db)
 
+            # 🔥 更新回调状态 (Sync Success)
+            CALLBACK_STATUS['last_success'] = datetime.datetime.now()
+            CALLBACK_STATUS['last_error'] = None
+            CALLBACK_STATUS['error_count'] = 0
+            CALLBACK_STATUS['last_check'] = datetime.datetime.now()
+
             return processed_result
 
         return {"status": "event_handled", "event_type": event_type}

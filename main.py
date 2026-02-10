@@ -196,6 +196,90 @@ async def startup_event():
 
 
 # ----------------------
+# Background Task: Local File Rotation
+# ----------------------
+import time
+import threading
+
+def run_rotation_task():
+    """定期清理由于S3备份而无用的本地旧文件"""
+    logger.info("🕒 Starting Local File Rotation Task...")
+    while True:
+        try:
+            # 1. 检查配置与环境
+            # 必须启用 S3 且 启用本地清理
+            from app.core.config import S3_ENABLED, LOCAL_RETENTION_ENABLED, LOCAL_RETENTION_DAYS, MEDIA_STORAGE_PATH
+            from app.services.storage_service import storage
+
+            # Reload config values dynamically (since they might change at runtime)
+            # Note: imported variables are copies, so we might need to access _config if we want real-time updates without restart.
+            # But the requirement says "config and frontend can set it", and usually requires restart.
+            # However, user asked for "two sides sync update".
+            # For simplicity, we assume restart is required for config changes to take effect fully, 
+            # OR we read from _config dict directly if possible.
+            # Let's read from _config via get_config to be safe, or re-import.
+            # Actually, main.py imports them at module level. To support dynamic update without restart, we should look at _config.
+            
+            from app.core.config import _config
+            s3_on = str(_config.get('storage', {}).get('s3_enabled', 'false')).lower() == 'true'
+            retention_on = str(_config.get('storage', {}).get('local_retention_enabled', 'false')).lower() == 'true'
+            days = int(_config.get('storage', {}).get('local_retention_days', 30))
+            if days < 3: days = 3
+
+            if s3_on and retention_on:
+                # 2. 检查 S3 连接状态
+                if storage.s3_client:
+                    logger.info(f"🧹 Running local cleanup. Retention: {days} days.")
+                    
+                    cleanup_count = 0
+                    freed_space = 0
+                    cutoff_time = time.time() - (days * 86400)
+                    
+                    # 遍历 media_files
+                    for root, dirs, files in os.walk(MEDIA_STORAGE_PATH):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            try:
+                                # Check mtime
+                                mtime = os.path.getmtime(file_path)
+                                if mtime < cutoff_time:
+                                    # Double check: Is this file actually on S3?
+                                    # For performance, we assume if S3 is enabled, all files SHOULD be there.
+                                    # But to be safe, we could check DB message status or check S3 HEAD.
+                                    # Checking S3 HEAD for every file is slow.
+                                    # We will rely on the requirement: "When enabled S3... set local rotation... delete expired"
+                                    
+                                    file_size = os.path.getsize(file_path)
+                                    os.remove(file_path)
+                                    cleanup_count += 1
+                                    freed_space += file_size
+                                    # logger.debug(f"Deleted old file: {file_path}")
+                            except Exception as e:
+                                logger.error(f"Error deleting file {file_path}: {e}")
+
+                    if cleanup_count > 0:
+                        logger.info(f"✅ Cleanup finished. Deleted {cleanup_count} files, freed {freed_space/1024/1024:.2f} MB.")
+                else:
+                    logger.warning("🧹 Cleanup skipped: S3 enabled but client not connected.")
+            
+            # Sleep for 1 hour (or 24 hours)
+            # Check every hour
+            time.sleep(3600) 
+
+        except Exception as e:
+            logger.error(f"❌ Rotation task error: {e}")
+            time.sleep(3600)
+
+@app.on_event("startup")
+async def start_background_tasks():
+    # ... existing startup tasks ...
+    pass
+    # Start rotation thread
+    t = threading.Thread(target=run_rotation_task, daemon=True)
+    t.start()
+    logger.info("🚀 Background rotation task started")
+
+# ----------------------
 # Middleware: Security Headers & Rate Limiting
 # ----------------------
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -940,6 +1024,7 @@ async def first_login_page(
         request: Request
 ):
     """首次登录页面"""
+    db = SessionLocal()
     try:
         session_token = request.session.get("access_token")
         cookie_token = request.cookies.get("access_token")

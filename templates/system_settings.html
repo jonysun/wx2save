@@ -243,6 +243,24 @@
                                                 name="s3_presigned_expiration"
                                                 value="{{ config.storage.s3_presigned_expiration or 3600 }}">
                                         </div>
+
+                                        <hr class="my-4">
+                                        <h6 class="mb-3 text-muted">本地文件自动清理 (Local Retention)</h6>
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="local_retention_enabled"
+                                                name="local_retention_enabled" value="true" {% if
+                                                config.storage.local_retention_enabled %}checked{% endif %}>
+                                            <label class="form-check-label"
+                                                for="local_retention_enabled">启用本地过期文件自动清理</label>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="local_retention_days" class="form-label">保留天数 (Retention
+                                                Days)</label>
+                                            <input type="number" class="form-control" id="local_retention_days"
+                                                name="local_retention_days" min="3"
+                                                value="{{ config.storage.local_retention_days or 30 }}">
+                                            <div class="form-text">仅当 S3 启用且连接正常时，才会清理本地超过此天数的媒体文件 (最小 3 天)。</div>
+                                        </div>
                                     </div>
 
                                     <div class="d-flex gap-2">
@@ -571,6 +589,9 @@
                 // Checkbox handling
                 const s3Checkbox = document.getElementById('s3_enabled');
                 rawData.s3_enabled = s3Checkbox ? s3Checkbox.checked : false;
+
+                const retentionCheckbox = document.getElementById('local_retention_enabled');
+                rawData.local_retention_enabled = retentionCheckbox ? retentionCheckbox.checked : false;
 
                 payload = { "storage": rawData };
             }

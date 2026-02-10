@@ -51,8 +51,8 @@ else:
             'url': f"sqlite:///{DATA_DIR}/wecom_messages.db"
         },
         'storage': {
-            # 媒体文件也建议移入 data/media，但保持 media_files 也没问题，这里统一一下
-            'media_path': f"{DATA_DIR}/media_files",
+            # 媒体文件移至根目录
+            'media_path': "media_files",
             's3_enabled': False,
             's3_endpoint_url': '',
             's3_access_key': '',
@@ -62,7 +62,11 @@ else:
             's3_bucket_name': '',
             's3_region_name': '',
             's3_presigned_expiration': 3600,
-            's3_proxy_mode': True  # 默认开启代理模式 (解决内网穿透/隐藏后端)，设为 False 则使用 Redirect 302 跳转直连
+            's3_proxy_mode': True,  # 默认开启代理模式 (解决内网穿透/隐藏后端)，设为 False 则使用 Redirect 302 跳转直连
+            
+            # 本地文件保留策略 (仅在S3启用时有效)
+            'local_retention_enabled': False,
+            'local_retention_days': 30
         },
         'rate_limit': {
             'max_login_attempts': 5,
@@ -157,7 +161,11 @@ if os.path.exists('/app') and 'sqlite' in DATABASE_URL:
 # 文件存储 (支持本地和S3)
 # ==========================================
 store_cfg = _config.get('storage', {})
+# default to "media_files" in root if not set
 MEDIA_STORAGE_PATH = get_config("MEDIA_STORAGE_PATH", 'storage', 'media_path', "media_files")
+# ensure it's absolute path if it's relative
+if not os.path.isabs(MEDIA_STORAGE_PATH):
+    MEDIA_STORAGE_PATH = os.path.abspath(MEDIA_STORAGE_PATH)
 
 # S3 配置
 # 修复：先转字符串再 lower，防止 yaml 解析为 bool 类型导致报错
@@ -168,6 +176,9 @@ S3_SECRET_KEY = get_config("S3_SECRET_KEY", 'storage', 's3_secret_key', "")
 S3_BUCKET_NAME = get_config("S3_BUCKET_NAME", 'storage', 's3_bucket_name', "")
 S3_REGION_NAME = get_config("S3_REGION_NAME", 'storage', 's3_region_name', "")
 S3_PRESIGNED_EXPIRATION = int(get_config("S3_PRESIGNED_EXPIRATION", 'storage', 's3_presigned_expiration', 3600))
+# 本地保留策略
+LOCAL_RETENTION_ENABLED = str(get_config("LOCAL_RETENTION_ENABLED", 'storage', 'local_retention_enabled', "False")).lower() == "true"
+LOCAL_RETENTION_DAYS = int(get_config("LOCAL_RETENTION_DAYS", 'storage', 'local_retention_days', 30))
 
 # ==========================================
 # 速率限制
