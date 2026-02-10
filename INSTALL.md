@@ -19,14 +19,17 @@
 
 1. **配置环境**:
    - 首次运行建议先创建持久化目录：
+
    ```bash
    mkdir -p data
    mkdir -p media_files
    ```
+
    后续docker会在data目录下创建config.yaml配置文件，并挂载到容器中。
    - 也可以先手动创建config.yaml文件，并填好企业微信的配置信息。
 
   - 推荐docker compose 部署:
+  
   ```bash
   version: '3.8'
   services:
