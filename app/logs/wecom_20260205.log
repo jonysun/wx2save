@@ -1,0 +1,136 @@
+2026-02-05 11:13:36,037 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 11:13:36,364 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 11:13:36,390 [INFO] wecom: 🚀 启动企业微信消息管理平台...
+2026-02-05 11:13:36,391 [INFO] wecom: 🔧 初始化数据库表结构...
+2026-02-05 11:13:36,392 [INFO] wecom: 👮 初始化管理员账户...
+2026-02-05 11:13:36,412 [INFO] wecom: 📁 媒体文件存储目录: ./media_files
+2026-02-05 11:13:36,412 [INFO] wecom: 📄 日志文件位置: app/logs\wecom_20260205.log
+2026-02-05 11:13:36,413 [INFO] wecom: ✅ 应用启动完成！访问 http://localhost:8000/login 开始使用
+2026-02-05 11:13:49,152 [INFO] wecom: 📩 Received message callback: sig=1d5c2b15d05f460edea4d39dabde59e1d294dcf7, ts=1770261229, nonce=1234567890, len=710
+2026-02-05 11:13:49,166 [INFO] wecom: 🔓 Message decrypted successfully
+2026-02-05 11:13:49,169 [INFO] wecom: 📄 Parsed message data: {"ToUserName": "wwa63b837649300e8f", "FromUserName": "sys", "CreateTime": "1770261229", "MsgType": "event", "Event": "kf_msg_or_event", "Token": "TEST_TOKEN", "OpenKfId": "TEST_OPEN_KF_ID"}
+2026-02-05 11:13:49,170 [INFO] wecom: Handling customer service event: type=kf_msg_or_event, token=TEST_TOKEN, open_kfid=TEST_OPEN_KF_ID
+2026-02-05 11:13:49,462 [INFO] wecom: New access_token obtained, expires in 7200 seconds
+2026-02-05 11:13:49,469 [INFO] wecom: Got access_token for message sync
+2026-02-05 11:13:49,481 [ERROR] wecom: Handle customer service event failed: (sqlite3.OperationalError) no such column: message_cursors.last_error_message
+[SQL: SELECT message_cursors.id AS message_cursors_id, message_cursors.open_kfid AS message_cursors_open_kfid, message_cursors.cursor AS message_cursors_cursor, message_cursors.last_cursor AS message_cursors_last_cursor, message_cursors.last_sync_time AS message_cursors_last_sync_time, message_cursors.status AS message_cursors_status, message_cursors.error_count AS message_cursors_error_count, message_cursors.last_error_message AS message_cursors_last_error_message 
+FROM message_cursors 
+WHERE message_cursors.open_kfid = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('TEST_OPEN_KF_ID', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such column: message_cursors.last_error_message
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\antigrvProject\wecom\wecom.py", line 94, in handle_customer_service_event
+    current_cursor = get_cursor_for_kfid(open_kfid, db)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\antigrvProject\wecom\services.py", line 123, in get_cursor_for_kfid
+    cursor_record = db.query(MessageCursor).filter(MessageCursor.open_kfid == open_kfid).first()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2759, in first
+    return self.limit(1)._iter().first()  # type: ignore
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\query.py", line 2857, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\Jonysun\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: message_cursors.last_error_message
+[SQL: SELECT message_cursors.id AS message_cursors_id, message_cursors.open_kfid AS message_cursors_open_kfid, message_cursors.cursor AS message_cursors_cursor, message_cursors.last_cursor AS message_cursors_last_cursor, message_cursors.last_sync_time AS message_cursors_last_sync_time, message_cursors.status AS message_cursors_status, message_cursors.error_count AS message_cursors_error_count, message_cursors.last_error_message AS message_cursors_last_error_message 
+FROM message_cursors 
+WHERE message_cursors.open_kfid = ?
+ LIMIT ? OFFSET ?]
+[parameters: ('TEST_OPEN_KF_ID', 1, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-02-05 11:13:49,563 [INFO] wecom: ✅ Message processed result: {'error': "(sqlite3.OperationalError) no such column: message_cursors.last_error_message\n[SQL: SELECT message_cursors.id AS message_cursors_id, message_cursors.open_kfid AS message_cursors_open_kfid, message_cursors.cursor AS message_cursors_cursor, message_cursors.last_cursor AS message_cursors_last_cursor, message_cursors.last_sync_time AS message_cursors_last_sync_time, message_cursors.status AS message_cursors_status, message_cursors.error_count AS message_cursors_error_count, message_cursors.last_error_message AS message_cursors_last_error_message \nFROM message_cursors \nWHERE message_cursors.open_kfid = ?\n LIMIT ? OFFSET ?]\n[parameters: ('TEST_OPEN_KF_ID', 1, 0)]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)", 'status': 'failed'}
+2026-02-05 11:35:53,580 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 11:35:53,803 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 11:35:53,820 [INFO] wecom: 🚀 启动企业微信消息管理平台...
+2026-02-05 11:35:53,821 [INFO] wecom: 🔧 初始化数据库表结构...
+2026-02-05 11:35:53,821 [INFO] wecom: 👮 初始化管理员账户...
+2026-02-05 11:35:53,833 [INFO] wecom: 📁 媒体文件存储目录: ./media_files
+2026-02-05 11:35:53,834 [INFO] wecom: 📄 日志文件位置: app/logs\wecom_20260205.log
+2026-02-05 11:35:53,834 [INFO] wecom: ✅ 应用启动完成！访问 http://localhost:8000/login 开始使用
+2026-02-05 11:50:58,407 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 11:50:58,637 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 11:50:58,654 [INFO] wecom: 🚀 启动企业微信消息管理平台...
+2026-02-05 11:50:58,654 [INFO] wecom: 🔧 初始化数据库表结构...
+2026-02-05 11:50:58,655 [INFO] wecom: 👮 初始化管理员账户...
+2026-02-05 11:50:58,665 [INFO] wecom: 📁 媒体文件存储目录: ./media_files
+2026-02-05 11:50:58,666 [INFO] wecom: 📄 日志文件位置: app/logs\wecom_20260205.log
+2026-02-05 11:50:58,667 [INFO] wecom: ✅ 应用启动完成！访问 http://localhost:8000/login 开始使用
+2026-02-05 12:01:05,053 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 12:01:05,228 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 12:01:05,249 [INFO] wecom: 🚀 启动企业微信消息管理平台...
+2026-02-05 12:01:05,250 [INFO] wecom: 🔧 初始化数据库表结构...
+2026-02-05 12:01:05,250 [INFO] wecom: 💾 Database URL: sqlite:///./wecom_messages.db
+2026-02-05 12:01:05,250 [INFO] wecom: 📂 Absolute DB Path: D:\antigrvProject\wecom\wecom_messages.db
+2026-02-05 12:01:05,251 [INFO] wecom: 👮 初始化管理员账户...
+2026-02-05 12:01:05,263 [INFO] wecom: 📁 媒体文件存储目录: ./media_files
+2026-02-05 12:01:05,264 [INFO] wecom: 📄 日志文件位置: app/logs\wecom_20260205.log
+2026-02-05 12:01:05,264 [INFO] wecom: ✅ 应用启动完成！访问 http://localhost:8000/login 开始使用
+2026-02-05 12:26:57,864 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 12:26:58,019 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 12:26:58,035 [INFO] wecom: 🚀 启动企业微信消息管理平台...
+2026-02-05 12:26:58,035 [INFO] wecom: 🔧 初始化数据库表结构...
+2026-02-05 12:26:58,035 [INFO] wecom: 💾 Database URL: sqlite:///./wecom_messages.db
+2026-02-05 12:26:58,037 [INFO] wecom: 📂 Absolute DB Path: D:\antigrvProject\wecom\wecom_messages.db
+2026-02-05 12:26:58,037 [INFO] wecom: 👮 初始化管理员账户...
+2026-02-05 12:26:58,047 [INFO] wecom: 📁 媒体文件存储目录: ./media_files
+2026-02-05 12:26:58,047 [INFO] wecom: 📄 日志文件位置: app/logs\wecom_20260205.log
+2026-02-05 12:26:58,048 [INFO] wecom: ✅ 应用启动完成！访问 http://localhost:8000/login 开始使用
+2026-02-05 12:33:26,611 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 12:33:26,849 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 12:33:26,875 [INFO] wecom: 🚀 启动企业微信消息管理平台...
+2026-02-05 12:33:26,876 [INFO] wecom: 🔧 初始化数据库表结构...
+2026-02-05 12:33:26,877 [INFO] wecom: 💾 Database URL: sqlite:///./wecom_messages.db
+2026-02-05 12:33:26,877 [INFO] wecom: 📂 Absolute DB Path: D:\antigrvProject\wecom\wecom_messages.db
+2026-02-05 12:33:26,878 [INFO] wecom: 👮 初始化管理员账户...
+2026-02-05 12:33:26,892 [INFO] wecom: 📁 媒体文件存储目录: ./media_files
+2026-02-05 12:33:26,896 [INFO] wecom: 📄 日志文件位置: app/logs\wecom_20260205.log
+2026-02-05 12:33:26,897 [INFO] wecom: ✅ 应用启动完成！访问 http://localhost:8000/login 开始使用
+2026-02-05 12:34:17,710 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 12:34:17,881 [INFO] auth: 🔑 Registering auth routes...
+2026-02-05 12:34:17,900 [INFO] wecom: 🚀 启动企业微信消息管理平台...
+2026-02-05 12:34:17,901 [INFO] wecom: 🔧 初始化数据库表结构...
+2026-02-05 12:34:17,901 [INFO] wecom: 💾 Database URL: sqlite:///./wecom_messages.db
+2026-02-05 12:34:17,902 [INFO] wecom: 📂 Absolute DB Path: D:\antigrvProject\wecom\wecom_messages.db
+2026-02-05 12:34:17,902 [INFO] wecom: 👮 初始化管理员账户...
+2026-02-05 12:34:17,912 [INFO] wecom: 📁 媒体文件存储目录: ./media_files
+2026-02-05 12:34:17,912 [INFO] wecom: 📄 日志文件位置: app/logs\wecom_20260205.log
+2026-02-05 12:34:17,913 [INFO] wecom: ✅ 应用启动完成！访问 http://localhost:8000/login 开始使用

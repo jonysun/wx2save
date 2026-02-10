@@ -1,0 +1,138 @@
+/* Sidebar fixes */
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+    /* Width control handled by Bootstrap classes or override here if needed */
+}
+
+@media (min-width: 768px) {
+    .sidebar {
+        width: 200px !important;
+        /* Narrow sidebar */
+    }
+
+    main {
+        margin-left: 200px !important;
+        /* Offset main content */
+        width: calc(100% - 200px) !important;
+    }
+
+    .navbar-brand {
+        width: 200px !important;
+    }
+}
+
+/* Table Column Widths */
+.col-selection {
+    width: 40px;
+    text-align: center;
+}
+
+.col-id {
+    min-width: 60px;
+    max-width: 80px;
+}
+
+.col-userid {
+    min-width: 140px;
+    max-width: 220px;
+    word-break: break-all;
+    /* Prevent overflow */
+}
+
+.col-msgtype {
+    width: 80px;
+}
+
+.col-time {
+    width: 140px;
+    /* narrowed */
+}
+
+/* Narrow Content */
+.col-content-narrow {
+    max-width: 320px;
+}
+
+/* Unified Small Font */
+.text-small-all td {
+    font-size: 0.85rem;
+}
+
+/* Dashboard Cards */
+.card-stats {
+    min-height: 140px;
+    border: none;
+    border-radius: 10px;
+    transition: transform 0.2s;
+    color: white;
+}
+
+.card-stats:hover {
+    transform: translateY(-5px);
+}
+
+.card-stats .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.card-stats h5 {
+    font-size: 1rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.card-stats h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.card-stats .icon {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    font-size: 3rem;
+    opacity: 0.3;
+}
+
+/* Card Variants */
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #4e73df 10%, #224abe 90%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(45deg, #1cc88a 10%, #13855c 90%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(45deg, #36b9cc 10%, #258391 90%);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(45deg, #f6c23e 10%, #dda20a 90%);
+}
+
+/* Navbar */
+.navbar-brand {
+    padding-top: .75rem;
+    padding-bottom: .75rem;
+    font-size: 1rem;
+    background-color: rgba(0, 0, 0, .25);
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25);
+}
+
+
+.table td {
+    vertical-align: middle;
+}
+
+.text-small {
+    font-size: 0.85rem;
+}

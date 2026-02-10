@@ -1,0 +1,21 @@
+database:
+  url: sqlite:////app/data/wecom_messages.db
+logging:
+  backup_count: 7
+  level: INFO
+  max_bytes: 10485760
+  rotation: daily
+rate_limit:
+  login_timeout_minutes: 10
+  max_login_attempts: 5
+security:
+  access_token_expire_minutes: 30
+  algorithm: HS256
+  secret_key: 662c2380f281b3632d932cc79243a626529a3cf7b008d30d1e04370101a3efe9
+storage:
+  media_path: /app/media_files
+wecom:
+  corp_id: ''
+  corp_secret: ''
+  encoding_aes_key: ''
+  token: ''

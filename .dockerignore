@@ -1,0 +1,44 @@
+# Exclude version control
+.git
+.gitignore
+
+# Exclude virtual environment
+.venv
+venv
+env
+
+# Exclude compiled python files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude local dev database
+*.db
+*.sqlite
+
+# Exclude logs
+logs
+*.log
+
+# Exclude local media files (mounted via volume instead)
+media_files
+media
+
+# Exclude tests and scripts not needed for runtime
+tests
+# scripts # Scripts might be needed for maintenance
+
+# Exclude IDE settings
+.vscode
+.idea
+.gemini
+
+# Exclude build artifacts
+build
+dist
+*.egg-info
+
+# Exclude documentation
+*.md
+docs

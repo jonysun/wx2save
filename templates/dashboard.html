@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表板 - Wx2save 微信转存助手</title>
+    <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/benz-amr-recorder@1.1.5/BenzAMRRecorder.min.js"></script>
+    <style>
+        .text-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-all;
+            white-space: normal;
+        }
+
+        /* Ensure buttons don't shrink */
+        .action-icon-group {
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand me-0 px-3 d-flex align-items-center" href="#">
+            <i class="bi bi-cloud-arrow-down-fill me-2 fs-4 text-success"></i>
+            <span>Wx2save <small class="text-white-50 ms-1" style="font-size: 0.8rem;">微信转存助手</small></span>
+        </a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
+            aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav d-flex flex-row">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="https://github.com/jonysun/wecom" target="_blank"
+                    title="GitHub Repository">
+                    <i class="bi bi-github"></i>
+                </a>
+            </div>
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3 logout-btn" href="#" id="logoutBtn">
+                    <i class="bi bi-box-arrow-right me-1"></i>登出
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                仪表板
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/messages">
+                                <i class="bi bi-chat-left-text me-2"></i>
+                                消息列表
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/system/settings">
+                                <i class="bi bi-gear-fill me-2"></i>
+                                系统设置
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">仪表板</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="text-muted small">
+                            上次同步: {{ last_sync_time or '从未' }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <!-- 统计卡片 -->
+                <style>
+                    .bg-gradient-primary {
+                        background: linear-gradient(45deg, #4e73df 0%, #224abe 100%) !important;
+                    }
+
+                    .bg-gradient-success {
+                        background: linear-gradient(45deg, #1cc88a 0%, #13855c 100%) !important;
+                    }
+
+                    .bg-gradient-info {
+                        background: linear-gradient(45deg, #36b9cc 0%, #258391 100%) !important;
+                    }
+
+                    .bg-gradient-warning {
+                        background: linear-gradient(45deg, #f6c23e 0%, #dda20a 100%) !important;
+                    }
+                </style>
+                <div class="row">
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card bg-gradient-primary text-white shadow h-100 py-2 border-0">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-uppercase mb-1" style="opacity: 0.8;">
+                                            总消息数</div>
+                                        <div class="h5 mb-0 font-weight-bold">{{ total_messages }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="bi bi-chat-dots-fill fa-2x text-white-50"
+                                            style="font-size: 2rem;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card bg-gradient-success text-white shadow h-100 py-2 border-0">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-uppercase mb-1" style="opacity: 0.8;">
+                                            今日消息</div>
+                                        <div class="h5 mb-0 font-weight-bold">{{ today_messages }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="bi bi-calendar-check-fill fa-2x text-white-50"
+                                            style="font-size: 2rem;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card bg-gradient-info text-white shadow h-100 py-2 border-0">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-uppercase mb-1" style="opacity: 0.8;">
+                                            总联系人</div>
+                                        <div class="h5 mb-0 font-weight-bold">{{ total_senders }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="bi bi-people-fill fa-2x text-white-50" style="font-size: 2rem;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="card bg-gradient-warning text-white shadow h-100 py-2 border-0">
+                            <div class="card-body">
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col mr-2">
+                                        <div class="text-xs font-weight-bold text-uppercase mb-1" style="opacity: 0.8;">
+                                            活跃联系人 (24h)</div>
+                                        <div class="h5 mb-0 font-weight-bold">{{ recent_senders }}</div>
+                                    </div>
+                                    <div class="col-auto">
+                                        <i class="bi bi-person-check-fill fa-2x text-white-50"
+                                            style="font-size: 2rem;"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ... -->
+
+                <!-- 最新消息列表 -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">最新消息</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th class="col-time text-nowrap" style="width: 10%; min-width: 110px;">
+                                                    时间</th>
+                                                <!-- 缩小30% (160 -> 110) -->
+                                                <th class="col-msgtype text-nowrap" style="width: 1%;">类型
+                                                </th>
+                                                <th class="col-userid text-truncate text-start"
+                                                    style="width: 15%; min-width: 150px; max-width: 300px;">
+                                                    用户</th>
+                                                <!-- 内容列：去掉固定宽度限制，让其自适应占满剩余空间 -->
+                                                <th style="min-width: 200px;">内容/文件</th>
+                                                <th class="text-nowrap" style="min-width: 150px;">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for message in recent_messages %}
+                                            {% set extra = message.extra_data|from_json %}
+                                            {% set type_map = {
+                                            'text': {'label': '文本', 'color': 'primary'},
+                                            'image': {'label': '图片', 'color': 'success'},
+                                            'voice': {'label': '语音', 'color': 'warning text-dark'},
+                                            'video': {'label': '视频', 'color': 'info text-dark'},
+                                            'file': {'label': '文件', 'color': 'secondary'},
+                                            'link': {'label': '链接', 'color': 'info text-dark'},
+                                            'merged_msg': {'label': '聊天记录', 'color': 'dark'},
+                                            'location': {'label': '位置', 'color': 'danger'},
+                                            'weapp': {'label': '小程序', 'color': 'primary'},
+                                            'miniprogram': {'label': '小程序', 'color': 'primary'},
+                                            'chatrecord': {'label': '聊天记录', 'color': 'dark'},
+                                            'todo': {'label': '待办', 'color': 'info'},
+                                            'vote': {'label': '投票', 'color': 'warning'},
+                                            'emotion': {'label': '表情', 'color': 'warning text-dark'},
+                                            'markdown': {'label': 'MarkDown', 'color': 'secondary'},
+                                            'meeting': {'label': '会议', 'color': 'primary'},
+                                            'collect': {'label': '填表', 'color': 'success'},
+                                            'doc': {'label': '文档', 'color': 'primary'},
+                                            'external_redpacket': {'label': '红包', 'color': 'danger'},
+                                            'business_card': {'label': '名片', 'color': 'info'}
+                                            } %}
+                                            {% set type_info = type_map.get(message.msgtype, {'label':
+                                            message.msgtype,
+                                            'color': 'secondary'}) %}
+
+                                            <tr>
+                                                <td>{{ message.send_time.strftime('%m-%d %H:%M') }}</td>
+                                                <td>
+                                                    <span class="badge bg-{{ type_info.color }}">
+                                                        {{ type_info.label }}
+                                                    </span>
+                                                </td>
+                                                <td class="col-userid text-small" title="{{ message.external_userid }}">
+                                                    {# 尝试从 customer_map 获取昵称 #}
+                                                    {% set cust = customer_map.get(message.external_userid)
+                                                    %}
+                                                    <span class="fw-bold">
+                                                        {% if cust and cust.nickname %}
+                                                        {{ cust.nickname }}
+                                                        {% else %}
+                                                        {{ message.external_userid }}
+                                                        {% endif %}
+                                                    </span>
+                                                </td>
+                                                <td class="message-content text-small">
+                                                    {% if message.msgtype == 'text' %}
+                                                    <div class="text-clamp-2" title="{{ message.content }}">
+                                                        {{ message.content }}
+                                                    </div>
+
+                                                    {# 链接类型 #}
+                                                    {% elif message.msgtype == 'link' and extra and
+                                                    extra.link %}
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="d-flex align-items-center text-truncate pe-2"
+                                                            style="min-width: 0;">
+                                                            <i
+                                                                class="bi bi-link-45deg me-2 text-info flex-shrink-0"></i>
+                                                            <div class="d-flex flex-column" style="min-width: 0;">
+                                                                <span class="fw-bold text-truncate"
+                                                                    title="{{ extra.link.title }}">{{
+                                                                    extra.link.title
+                                                                    }}</span>
+                                                                <small class="text-muted text-truncate">{{
+                                                                    extra.link.desc
+                                                                    }}</small>
+                                                            </div>
+                                                        </div>
+                                                        <a href="{{ extra.link.url }}" target="_blank"
+                                                            class="btn btn-sm btn-outline-info action-icon-group py-0 px-2"
+                                                            title="访问链接">
+                                                            <i class="bi bi-box-arrow-up-right"></i>
+                                                        </a>
+                                                    </div>
+
+                                                    {# 视频类型 #}
+                                                    {% elif message.msgtype == 'video' %}
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="bi bi-camera-video me-2 text-info flex-shrink-0"></i>
+                                                        <div class="text-clamp-2">视频消息</div>
+                                                        {% if message.download_status == 'success' %}
+                                                        <button onclick="secureView('{{ message.id }}')"
+                                                            class="btn btn-sm btn-link text-decoration-none p-0 ms-2 action-icon-group"
+                                                            title="播放视频">
+                                                            <i class="bi bi-play-circle-fill text-secondary"
+                                                                style="font-size: 1.2rem;"></i>
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
+
+                                                    {# 名片类型 #}
+                                                    {% elif message.msgtype == 'business_card' %}
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="bi bi-person-badge me-2 text-info flex-shrink-0"></i>
+                                                        {% set card_userid = extra.userid %}
+                                                        {% set card_cust = customer_map.get(card_userid) %}
+                                                        <div class="text-truncate" style="max-width: 200px;"
+                                                            title="[名片] {{ card_cust.nickname if card_cust else card_userid }}">
+                                                            [名片] {{ card_cust.nickname if card_cust else
+                                                            card_userid }}
+                                                        </div>
+                                                    </div>
+
+                                                    {# 合并聊天记录 #}
+                                                    {% elif message.msgtype == 'merged_msg' and extra and
+                                                    extra.merged_msg %}
+                                                    <div class="d-flex align-items-center">
+                                                        <i
+                                                            class="bi bi-chat-square-quote me-2 text-dark flex-shrink-0"></i>
+                                                        <div class="text-clamp-2 flex-grow-1"
+                                                            title="{{ extra.merged_msg.title }}">
+                                                            {{ extra.merged_msg.title }}
+                                                        </div>
+                                                    </div>
+
+                                                    {# 小程序 #}
+                                                    {% elif message.msgtype == 'miniprogram' and extra and
+                                                    extra.miniprogram %}
+                                                    <div class="d-flex align-items-center">
+                                                        <i
+                                                            class="bi bi-app-indicator me-2 text-primary flex-shrink-0"></i>
+                                                        <div class="text-clamp-2 flex-grow-1"
+                                                            title="[小程序] {{ extra.miniprogram.title }}">
+                                                            [小程序] {{ extra.miniprogram.title }}
+                                                        </div>
+                                                    </div>
+
+                                                    {# 图片类型 #}
+                                                    {% elif message.msgtype == 'image' %}
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="d-flex align-items-center" style="min-width: 0;">
+                                                            <i class="bi bi-image me-2 text-success flex-shrink-0"></i>
+                                                            <div class="text-clamp-2"
+                                                                title="{{ message.original_filename }}">
+                                                                {{ message.original_filename or '图片消息' }}
+                                                            </div>
+                                                        </div>
+                                                        {% if message.download_status == 'success' %}
+                                                        <button onclick="secureView('{{ message.id }}')"
+                                                            class="btn btn-sm btn-link text-decoration-none p-0 ms-2 action-icon-group"
+                                                            title="查看图片">
+                                                            <i class="bi bi-eye"></i>
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
+
+                                                    {# 语音类型 #}
+                                                    {% elif message.msgtype == 'voice' %}
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="d-flex align-items-center">
+                                                            <i
+                                                                class="bi bi-mic-fill me-2 text-warning flex-shrink-0"></i>
+                                                            <div class="text-muted small">语音消息</div>
+                                                        </div>
+                                                        <button onclick="playVoice(this, '{{ message.id }}')"
+                                                            class="btn btn-sm btn-link text-decoration-none p-0 ms-2 action-icon-group"
+                                                            title="播放语音" {% if message.download_status !='success'
+                                                            %}disabled{% endif %}>
+                                                            <i class="bi bi-play-circle-fill text-secondary"
+                                                                style="font-size: 1.2rem;"></i>
+                                                        </button>
+                                                    </div>
+
+                                                    {# 其他带文件名的类型 (PDF, File, Video) #}
+                                                    {% elif message.original_filename %}
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="d-flex align-items-center" style="min-width: 0;">
+                                                            <i class="bi bi-file-earmark me-2 flex-shrink-0"></i>
+                                                            <div class="text-clamp-2"
+                                                                title="{{ message.original_filename }}">
+                                                                {{ message.original_filename }}
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="action-icon-group d-flex align-items-center">
+                                                            {# AMR 文件播放支持 #}
+                                                            {% if message.download_status == 'success' and
+                                                            message.original_filename.lower().endswith('.amr')
+                                                            %}
+                                                            <button onclick="playVoice(this, '{{ message.id }}')"
+                                                                class="btn btn-sm btn-link text-decoration-none p-0 ms-2"
+                                                                title="播放语音">
+                                                                <i class="bi bi-play-circle-fill text-secondary"
+                                                                    style="font-size: 1.2rem;"></i>
+                                                            </button>
+                                                            {% endif %}
+
+                                                            {# 预览按钮 #}
+                                                            {% if message.download_status == 'success' and (
+                                                            message.msgtype in ['video'] or
+                                                            message.original_filename.lower().endswith(('.pdf',
+                                                            '.jpg',
+                                                            '.jpeg',
+                                                            '.png', '.gif'))
+                                                            ) %}
+                                                            <button onclick="secureView('{{ message.id }}')"
+                                                                class="btn btn-sm btn-link text-decoration-none p-0 ms-2"
+                                                                title="查看文件">
+                                                                <i class="bi bi-eye"></i>
+                                                            </button>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    {% else %}
+                                                    <span class="text-muted">未知内容 ({{ message.msgtype
+                                                        }})</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <a href="/messages/{{ message.id }}"
+                                                        class="btn btn-sm btn-outline-primary">详情</a>
+                                                    {% if message.download_status == 'success' and
+                                                    message.media_path %}
+                                                    <button onclick="secureDownload('{{ message.id }}')"
+                                                        class="btn btn-sm btn-outline-success" title="下载">
+                                                        <i class="bi bi-download"></i>
+                                                    </button>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/notifications.js"></script>
+    <script>
+        // 安全查看函数
+        async function secureView(msgId) {
+            try {
+                // 请求生成一次性 Token 或临时 URL，明确指定 type=view (inline)
+                const response = await fetch(`/api/files/generate_token/${msgId}?disposition=inline`, { method: 'POST' });
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert('View failed: ' + (err.detail || 'Unknown error'));
+                    return;
+                }
+                const data = await response.json();
+                window.open(data.url, '_blank');
+            } catch (e) {
+                console.error(e);
+                alert('An error occurred during view request');
+            }
+        }
+
+        // 语音播放逻辑
+        // 语音播放逻辑
+        let currentAudio = null; // Can hold Audio object or BenzAMRRecorder instance
+        let currentBtn = null;
+
+        async function playVoice(btn, msgId) {
+            const icon = btn.querySelector('i');
+
+            // Check if it's the current audio playing
+            const isPlaying = currentAudio && (
+                (currentAudio instanceof Audio && !currentAudio.paused) ||
+                (currentAudio.isPlaying && currentAudio.isPlaying())
+            );
+
+            // Toggle Pause
+            if (isPlaying && currentBtn === btn) {
+                if (currentAudio.stop) currentAudio.stop();
+                else currentAudio.pause();
+
+                icon.classList.remove('bi-pause-circle-fill', 'text-danger');
+                icon.classList.add('bi-play-circle-fill', 'text-secondary');
+                return;
+            }
+
+            // Stop others
+            if (currentAudio) {
+                if (currentAudio.stop) currentAudio.stop();
+                else currentAudio.pause();
+
+                if (currentBtn) {
+                    const oldIcon = currentBtn.querySelector('i');
+                    if (oldIcon) {
+                        oldIcon.classList.remove('bi-pause-circle-fill', 'text-danger');
+                        oldIcon.classList.add('bi-play-circle-fill', 'text-secondary');
+                    }
+                }
+            }
+
+            // Set Loading State
+            icon.classList.remove('bi-play-circle-fill', 'text-secondary');
+            icon.classList.add('bi-three-dots', 'text-warning');
+            currentBtn = btn;
+
+            try {
+                // Get Token/URL
+                const response = await fetch(`/api/files/generate_token/${msgId}`, { method: 'POST' });
+                if (!response.ok) throw new Error('Token failed');
+                const data = await response.json();
+                const url = data.url;
+
+                let player;
+
+                // Assume BenzAMRRecorder for voice playback
+                const isAmr = true;
+
+                if (isAmr) {
+                    const amr = new BenzAMRRecorder();
+                    await amr.initWithUrl(url);
+                    player = amr;
+
+                    amr.onEnded(() => {
+                        resetIcon();
+                    });
+
+                    // On Play event
+                    amr.onPlay(() => {
+                        icon.classList.remove('bi-three-dots', 'text-warning');
+                        icon.classList.add('bi-pause-circle-fill', 'text-danger');
+                    });
+                } else {
+                    const audio = new Audio(url);
+                    player = audio;
+                    audio.onended = resetIcon;
+                }
+
+                currentAudio = player;
+                await player.play();
+
+            } catch (e) {
+                console.error(e);
+                alert('播放失败: ' + e.message);
+                resetIcon();
+            }
+
+            function resetIcon() {
+                icon.classList.remove('bi-pause-circle-fill', 'text-danger', 'bi-three-dots', 'text-warning');
+                icon.classList.add('bi-play-circle-fill', 'text-secondary');
+                currentAudio = null;
+                currentBtn = null;
+            }
+        }
+
+        async function secureDownload(msgId) {
+            try {
+                const response = await fetch(`/api/files/generate_token/${msgId}`, { method: 'POST' });
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert('Download failed: ' + (err.detail || 'Unknown error'));
+                    return;
+                }
+                const data = await response.json();
+                window.location.href = data.url;
+            } catch (e) {
+                console.error(e);
+                alert('An error occurred during download request');
+            }
+        }
+
+
+
+        document.getElementById('logoutBtn').addEventListener('click', async function (e) {
+            e.preventDefault();
+
+            // 直接跳转到登录页，清除 cookie 由后端或新页面处理？
+            // 由于是 Cookie 认证，简单的跳转可能不足以清除服务器端会话
+            // 但这里我们至少可以清除 localStorage（虽然没用）并跳转
+
+            try {
+                // 可选：调用后端注销接口
+                await fetch('/auth/logout', { method: 'POST' });
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+
+            window.location.href = '/login';
+        });
+    </script>
+    <footer class="footer mt-auto py-3 bg-light text-center border-top">
+        <div class="container">
+            <a href="https://github.com/jonysun/wecom" target="_blank" title="GitHub Repository"
+                class="text-decoration-none text-muted me-2">
+                <i class="bi bi-github fs-5 align-middle"></i>
+            </a>
+            <span class="text-muted small">Wx2save v{{ version or '1.0.0' }}</span>
+        </div>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  wecom-monitor:
+    build: .
+    container_name: wx2save
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./media_files:/app/media_files
+    environment:
+      - TZ=Asia/Shanghai
+      - LOG_DIR=/app/app/logs
+      # DATABASE_URL 默认会指向 /app/data/wecom_messages.db
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/login" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统设置 - Wx2save 微信转存助手</title>
+    <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+        }
+
+        .navbar {
+            box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+        }
+
+        .logout-btn {
+            color: #dc3545;
+            text-decoration: none;
+        }
+
+        .logout-btn:hover {
+            color: #c82333;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand me-0 px-3 d-flex align-items-center" href="#">
+            <i class="bi bi-cloud-arrow-down-fill me-2 fs-4 text-success"></i>
+            <span>Wx2save <small class="text-white-50 ms-1" style="font-size: 0.8rem;">微信转存助手</small></span>
+        </a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
+            aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav d-flex flex-row">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3" href="https://github.com/jonysun/wecom" target="_blank"
+                    title="GitHub Repository">
+                    <i class="bi bi-github"></i>
+                </a>
+            </div>
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3 logout-btn" href="#" id="logoutBtn">
+                    <i class="bi bi-box-arrow-right me-1"></i>登出
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                仪表板
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/messages">
+                                <i class="bi bi-chat-left-text me-2"></i>
+                                消息列表
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/system/settings">
+                                <i class="bi bi-gear-fill me-2"></i>
+                                系统设置
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap border-bottom pb-2 mb-3">
+                    <h1 class="h2">系统设置</h1>
+                </div>
+
+                {% if message %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+
+                {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+
+                <div class="row g-4">
+                    <!-- 左侧：设置区域 -->
+                    <div class="col-md-8">
+                        <!-- 企业微信配置 -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-wechat me-2"></i>企业微信配置</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="saveConfigForm">
+                                    <div class="mb-3">
+                                        <label for="corp_id" class="form-label">Corp ID (企业ID)</label>
+                                        <input type="text" class="form-control" id="corp_id" name="corp_id"
+                                            value="{{ config.wecom.corp_id }}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Token</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" name="token" id="wecom_token"
+                                                value="{{ config.wecom.token or '' }}">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                onclick="togglePassword('wecom_token')"><i
+                                                    class="bi bi-eye"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">EncodingAESKey</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" name="encoding_aes_key"
+                                                id="wecom_aes_key" value="{{ config.wecom.encoding_aes_key or '' }}">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                onclick="togglePassword('wecom_aes_key')"><i
+                                                    class="bi bi-eye"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">CorpSecret (可选)</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" name="corp_secret"
+                                                id="wecom_secret" value="{{ config.wecom.corp_secret or '' }}">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                onclick="togglePassword('wecom_secret')"><i
+                                                    class="bi bi-eye"></i></button>
+                                        </div>
+                                    </div>
+                                    <hr class="my-4">
+                                    <h6 class="mb-3 text-muted">代理设置 (解决IP白名单问题)</h6>
+
+                                    <div class="mb-3">
+                                        <label for="api_base_url" class="form-label">API Base URL (代理地址)</label>
+                                        <input type="text" class="form-control" id="api_base_url" name="api_base_url"
+                                            value="{{ config.wecom.api_base_url or 'https://qyapi.weixin.qq.com' }}"
+                                            placeholder="https://qyapi.weixin.qq.com">
+                                        <div class="form-text">默认:
+                                            https://qyapi.weixin.qq.com。如果使用中转代理，请填写代理服务器的完整地址(不含末尾/)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="api_proxy_token" class="form-label">Proxy Token (安全验证)</label>
+                                        <input type="text" class="form-control" id="api_proxy_token"
+                                            name="api_proxy_token" value="{{ config.wecom.api_proxy_token or '' }}"
+                                            placeholder="Optional custom header token">
+                                        <div class="form-text">如果代理服务器配置了 Header 鉴权，请在此填写 Token (Header:
+                                            X-Antigrv-Token)</div>
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save me-1"></i>保存配置
+                                        </button>
+                                        <span class="text-muted ms-2 small">修改配置需要重启服务生效</span>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Storage Configuration -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-hdd-network me-2"></i>存储配置 (S3)</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="saveStorageConfigForm">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="s3_enabled"
+                                            name="s3_enabled" value="true" {% if config.storage.s3_enabled %}checked{%
+                                            endif %}>
+                                        <label class="form-check-label" for="s3_enabled">启用 S3 对象存储</label>
+                                    </div>
+
+                                    <div id="s3ConfigFields"
+                                        class="{% if not config.storage.s3_enabled %}d-none{% endif %}">
+                                        <div class="mb-3">
+                                            <label for="s3_endpoint_url" class="form-label">Endpoint URL (可选)</label>
+                                            <input type="text" class="form-control" id="s3_endpoint_url"
+                                                name="s3_endpoint_url"
+                                                value="{{ config.storage.s3_endpoint_url or '' }}"
+                                                placeholder="https://s3.amazonaws.com or https://minio.example.com">
+                                            <div class="form-text">如果是 AWS S3 可留空；如果是 MinIO / Cloudflare R2 等请填写完整
+                                                Endpoint。</div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="s3_access_key" class="form-label">Access Key</label>
+                                                <input type="text" class="form-control" id="s3_access_key"
+                                                    name="s3_access_key"
+                                                    value="{{ config.storage.s3_access_key or '' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="s3_secret_key" class="form-label">Secret Key</label>
+                                                <input type="password" class="form-control" id="s3_secret_key"
+                                                    name="s3_secret_key"
+                                                    value="{{ config.storage.s3_secret_key or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="s3_bucket_name" class="form-label">Bucket Name</label>
+                                                <input type="text" class="form-control" id="s3_bucket_name"
+                                                    name="s3_bucket_name"
+                                                    value="{{ config.storage.s3_bucket_name or '' }}">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="s3_region_name" class="form-label">Region Name</label>
+                                                <input type="text" class="form-control" id="s3_region_name"
+                                                    name="s3_region_name"
+                                                    value="{{ config.storage.s3_region_name or '' }}"
+                                                    placeholder="us-east-1">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="s3_presigned_expiration" class="form-label">URL 有效期 (秒)</label>
+                                            <input type="number" class="form-control" id="s3_presigned_expiration"
+                                                name="s3_presigned_expiration"
+                                                value="{{ config.storage.s3_presigned_expiration or 3600 }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save me-1"></i>保存存储配置
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info" id="testS3Btn">
+                                            <i class="bi bi-activity me-1"></i>测试连接
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- 右侧：系统状态 -->
+                    <div class="col-md-4">
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-activity me-2"></i>系统状态</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        服务状态
+                                        <span class="badge bg-success rounded-pill">运行中</span>
+                                    </li>
+                                    <!-- S3 Status Added Here -->
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        S3 存储
+                                        {% if s3_status == 'connected' %}
+                                        <span class="badge bg-success" title="{{ s3_msg }}">已连接</span>
+                                        {% elif s3_status == 'error' %}
+                                        <span class="badge bg-danger" title="{{ s3_msg }}">连接失败</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">未启用</span>
+                                        {% endif %}
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        数据库
+                                        <span
+                                            class="badge bg-{{ 'success' if status.database == 'ok' else 'danger' }} rounded-pill">{{
+                                            status.database }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        版本
+                                        <span>{{ status.version }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        服务器时间
+                                        <small>{{ status.timestamp }}</small>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        回调状态
+                                        {% if callback_info.status == 'success' %}
+                                        <span class="badge bg-success"
+                                            title="最近成功: {{ callback_info.last_success }}">正常</span>
+                                        {% elif callback_info.status == 'error' %}
+                                        <span class="badge bg-danger"
+                                            title="错误: {{ callback_info.last_error }}">异常</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">等待中</span>
+                                        {% endif %}
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Password Management (Moved here) -->
+                        <div class="card mb-4 mt-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-key me-2"></i>账号安全</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Change Username -->
+                                <h6 class="mb-3 text-primary"><i class="bi bi-person-badge me-2"></i>修改用户名</h6>
+                                <form id="changeUsernameForm" class="mb-5 border-bottom pb-4">
+                                    <div class="mb-3">
+                                        <label class="form-label">新用户名</label>
+                                        <input type="text" class="form-control" id="newUsernameSettings"
+                                            value="{{ user.username }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">当前密码 (确认修改)</label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="currentPasswordForUser"
+                                                required>
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                onclick="togglePassword('currentPasswordForUser')">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm">保存用户名</button>
+                                </form>
+
+                                <!-- Change Password -->
+                                <h6 class="mb-3 text-primary"><i class="bi bi-shield-lock me-2"></i>修改密码</h6>
+                                <form id="changePasswordForm">
+                                    <div class="mb-3">
+                                        <label for="current_password" class="form-label">当前密码</label>
+                                        <input type="password" class="form-control" id="current_password"
+                                            name="current_password" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="new_password" class="form-label">新密码</label>
+                                        <input type="password" class="form-control" id="new_password"
+                                            name="new_password" required minlength="8">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="confirm_password" class="form-label">确认新密码</label>
+                                        <input type="password" class="form-control" id="confirm_password"
+                                            name="confirm_password" required minlength="8">
+                                    </div>
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        <i class="bi bi-shield-lock me-1"></i>修改密码
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal fade" id="confirmSaveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">确认保存</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>确定要保存当前配置吗？</p>
+                    <p class="text-danger"><small>注意：保存后需要手动重启服务以使更改生效。</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="confirmSaveBtn">确定保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div class="modal fade" id="resultModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resultTitle">保存结果</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="resultBody">
+                    <!-- JS will fill this -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const icon = field.nextElementSibling.querySelector('i');
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+
+        // Logout logic
+        document.getElementById('logoutBtn').addEventListener('click', async function (e) {
+            e.preventDefault();
+            try {
+                await fetch('/auth/logout', { method: 'POST' });
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+            window.location.href = '/login';
+        });
+
+        // Save Config Logic
+        const saveForm = document.getElementById('saveConfigForm');
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmSaveModal'));
+        const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+        const confirmSaveBtn = document.getElementById('confirmSaveBtn');
+
+        // Toggle S3 Fields
+        const s3EnabledCheckbox = document.getElementById('s3_enabled');
+        const s3ConfigFields = document.getElementById('s3ConfigFields');
+        if (s3EnabledCheckbox && s3ConfigFields) {
+            s3EnabledCheckbox.addEventListener('change', function () {
+                if (this.checked) {
+                    s3ConfigFields.classList.remove('d-none');
+                } else {
+                    s3ConfigFields.classList.add('d-none');
+                }
+            });
+        }
+
+        if (saveForm) {
+            saveForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                confirmSaveBtn.dataset.formId = 'saveConfigForm';
+                confirmModal.show();
+            });
+        }
+
+        const saveStorageForm = document.getElementById('saveStorageConfigForm');
+        if (saveStorageForm) {
+            saveStorageForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                confirmSaveBtn.dataset.formId = 'saveStorageConfigForm';
+                confirmModal.show();
+            });
+        }
+
+        // Change Username Logic
+        document.getElementById('changeUsernameForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const newUsername = document.getElementById('newUsernameSettings').value;
+            const currentPassword = document.getElementById('currentPasswordForUser').value;
+
+            if (!confirm("确定要修改用户名为: " + newUsername + " 吗？")) return;
+
+            try {
+                const response = await fetch('/api/user/username', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        new_username: newUsername,
+                        current_password: currentPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    alert(data.message);
+                    // 用户名(Hash ID)已变更，旧token失效，必须跳转登录页
+                    window.location.href = '/login';
+                } else {
+                    alert('修改失败: ' + (data.detail || '未知错误'));
+                }
+            } catch (error) {
+                alert('请求失败: ' + error.message);
+            }
+        });
+
+        // Change Password Logic
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        if (changePasswordForm) {
+            changePasswordForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const currentPassword = document.getElementById('current_password').value;
+                const newPassword = document.getElementById('new_password').value;
+                const confirmPassword = document.getElementById('confirm_password').value;
+
+                if (newPassword !== confirmPassword) {
+                    alert('两次输入的新密码不一致');
+                    return;
+                }
+
+                if (!confirm('确定要修改密码吗？修改成功后需要重新登录。')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/user/password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            current_password: currentPassword,
+                            new_password: newPassword
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        alert('密码修改成功，请重新登录');
+                        window.location.href = '/login';
+                    } else {
+                        alert('修改失败: ' + (result.detail || '未知错误'));
+                    }
+                } catch (error) {
+                    alert('请求失败: ' + error.message);
+                }
+            });
+        }
+
+        confirmSaveBtn.addEventListener('click', async function () {
+            confirmModal.hide();
+
+            let payload = {};
+            // Determine which form triggered the save
+            // Note: We need to set this when form submits
+            const formId = confirmSaveBtn.dataset.formId || 'saveConfigForm';
+
+            if (formId === 'saveConfigForm') {
+                const formData = new FormData(document.getElementById('saveConfigForm'));
+                // Send as structured data to match new API logic, or rely on compatibility check
+                // Let's send structured data for cleaner future
+                payload = { "wecom": Object.fromEntries(formData.entries()) };
+            } else if (formId === 'saveStorageConfigForm') {
+                const formData = new FormData(document.getElementById('saveStorageConfigForm'));
+                const rawData = Object.fromEntries(formData.entries());
+
+                // Checkbox handling
+                const s3Checkbox = document.getElementById('s3_enabled');
+                rawData.s3_enabled = s3Checkbox ? s3Checkbox.checked : false;
+
+                payload = { "storage": rawData };
+            }
+
+            try {
+                const response = await fetch('/api/settings/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                const resultTitle = document.getElementById('resultTitle');
+                const resultBody = document.getElementById('resultBody');
+
+                if (response.ok && result.status === 'success') {
+                    resultTitle.innerText = '✅ 保存成功';
+                    resultTitle.className = 'modal-title text-success';
+                    resultBody.innerHTML = `
+                        <p>${result.message}</p>
+                        <div class="alert alert-warning mt-3">
+                            <strong>⚠️ 需要重启系统才能生效</strong>
+                        </div>
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-primary" id="restartNowBtn">
+                                <i class="bi bi-arrow-clockwise me-2"></i>立即重启系统
+                            </button>
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">稍后手动重启</button>
+                        </div>
+                    `;
+
+                    // 绑定重启按钮事件
+                    setTimeout(() => {
+                        const restartBtn = document.getElementById('restartNowBtn');
+                        if (restartBtn) {
+                            restartBtn.addEventListener('click', async function () {
+                                this.disabled = true;
+                                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>正在重启...';
+
+                                try {
+                                    const restartResp = await fetch('/api/system/restart', {
+                                        method: 'POST'
+                                    });
+
+                                    if (restartResp.ok) {
+                                        resultBody.innerHTML = `
+                                            <div class="alert alert-info">
+                                                <div class="spinner-border spinner-border-sm me-2"></div>
+                                                系统正在重启，请稍候...
+                                            </div>
+                                            <p class="text-muted small">页面将在10秒后自动刷新</p>
+                                        `;
+
+                                        // 10秒后刷新页面
+                                        setTimeout(() => {
+                                            window.location.reload();
+                                        }, 10000);
+                                    }
+                                } catch (error) {
+                                    resultBody.innerHTML = `<div class="alert alert-danger">重启请求失败: ${error.message}</div>`;
+                                }
+                            });
+                        }
+                    }, 100);
+                } else {
+                    throw new Error(result.detail || '保存失败');
+                }
+            } catch (error) {
+                document.getElementById('resultTitle').innerText = '❌ 保存失败';
+                document.getElementById('resultTitle').className = 'modal-title text-danger';
+                document.getElementById('resultBody').innerText = error.message;
+            }
+
+            resultModal.show();
+        });
+
+        // Test S3 Connection Logic
+        const testS3Btn = document.getElementById('testS3Btn');
+        if (testS3Btn) {
+            testS3Btn.addEventListener('click', async function () {
+                this.disabled = true;
+                const originalText = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Testing...';
+
+                try {
+                    const response = await fetch('/api/storage/test', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('✅ 连接成功: ' + result.message);
+                    } else {
+                        alert('❌ 连接失败: ' + result.message);
+                    }
+                } catch (error) {
+                    alert('❌ 请求错误: ' + error);
+                } finally {
+                    this.disabled = false;
+                    this.innerHTML = originalText;
+                }
+            });
+        }
+    </script>
+    <footer class="footer mt-auto py-3 bg-light text-center border-top">
+        <div class="container">
+            <a href="https://github.com/jonysun/wecom" target="_blank" title="GitHub Repository"
+                class="text-decoration-none text-muted me-2">
+                <i class="bi bi-github fs-5 align-middle"></i>
+            </a>
+            <span class="text-muted small">Wx2save v{{ version or '1.0.0' }}</span>
+        </div>
+    </footer>
+</body>
+
+</html>

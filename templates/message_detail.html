@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息详情 - 企业微信消息管理平台</title>
+    <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .pre-scrollable {
+            max-height: 400px;
+            overflow-y: scroll;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .logout-btn {
+            color: #dc3545;
+            text-decoration: none;
+        }
+
+        .logout-btn:hover {
+            color: #c82333;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+        <a class="navbar-brand me-0 px-3" href="#">企业微信消息管理</a>
+        <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
+            aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="navbar-nav">
+            <div class="nav-item text-nowrap">
+                <a class="nav-link px-3 logout-btn" href="#" id="logoutBtn">
+                    <i class="bi bi-box-arrow-right me-1"></i>登出
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                仪表板
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/messages">
+                                <i class="bi bi-chat-left-text me-2"></i>
+                                消息列表
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/system/settings">
+                                <i class="bi bi-gear-fill me-2"></i>
+                                系统设置
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <main class="px-md-4 py-4">
+                <div class="d-flex justify-content-between flex-wrap border-bottom pb-2 mb-3">
+                    <h1 class="h2">消息详情</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <a href="/messages" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>返回列表
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">微信原始字段 (Raw Fields)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-md-4"><strong>msgid:</strong></div>
+                            <div class="col-md-8 text-break">{{ raw_data.msgid }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-4"><strong>open_kfid:</strong></div>
+                            <div class="col-md-8 text-break">{{ raw_data.open_kfid }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-4"><strong>external_userid:</strong></div>
+                            <div class="col-md-8 text-break">{{ raw_data.external_userid }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-4"><strong>send_time:</strong></div>
+                            <div class="col-md-8">{{ raw_data.send_time }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-4"><strong>origin:</strong></div>
+                            <div class="col-md-8">{{ raw_data.origin }}</div>
+                        </div>
+                        <!-- 嵌套的文件信息 -->
+                        {% if raw_data.file %}
+                        <div class="row mb-2">
+                            <div class="col-md-4"><strong>file.media_id:</strong></div>
+                            <div class="col-md-8 text-break">{{ raw_data.file.media_id }}</div>
+                        </div>
+                        {% endif %}
+                        <!-- 嵌套的图片信息 -->
+                        {% if raw_data.image %}
+                        <div class="row mb-2">
+                            <div class="col-md-4"><strong>image.media_id:</strong></div>
+                            <div class="col-md-8 text-break">{{ raw_data.image.media_id }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">基本信息 (Database)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Internal ID:</strong> {{ message.id }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>入库时间:</strong> {{ message.send_time }}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <strong>用户昵称:</strong> {{ nickname or message.external_userid or 'Unknown' }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>类型:</strong>
+                                <span
+                                    class="badge bg-{{ 'primary' if message.msgtype == 'text' else 'success' if message.msgtype == 'image' else 'warning' if message.msgtype == 'voice' else 'danger' }}">
+                                    {{ message.msgtype }}
+                                </span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>下载状态:</strong>
+                                <span
+                                    class="badge bg-{{ 'success' if message.download_status == 'success' else 'danger' if message.download_status == 'failed' else 'warning' }}">
+                                    {{ message.download_status or 'N/A' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if message.msgtype == 'text' %}
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">消息内容</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">{{ message.content }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if message.msgtype == 'link' and raw_data.link %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">链接详情</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex">
+                                {% set thumb = raw_data.link.pic_url or raw_data.link.picurl %}
+                                {% if thumb %}
+                                <div class="flex-shrink-0 me-3">
+                                    <img src="{{ thumb }}" alt="Link Thumbnail" class="img-thumbnail"
+                                        style="width: 120px; height: 120px; object-fit: cover;">
+                                </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <h5 class="mt-0">{{ raw_data.link.title }}</h5>
+                                    <p class="mb-2 text-muted">{{ raw_data.link.desc }}</p>
+                                    <a href="{{ raw_data.link.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i>访问链接
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if message.msgtype == 'merged_msg' and raw_data.merged_msg and raw_data.merged_msg.item %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">合并聊天记录详情 ({{ raw_data.merged_msg.title }})</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 15%">发送时间</th>
+                                            <th style="width: 10%">类型</th>
+                                            <th style="width: 15%">发送者</th>
+                                            <th>内容</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in raw_data.merged_msg.item %}
+                                        <tr>
+                                            <td>{{ item.send_time }}</td>
+                                            <td><span class="badge bg-secondary">{{ item.msgtype }}</span></td>
+                                            <td>{{ item.sender_name }}</td>
+                                            <td class="text-break">
+                                                <code class="text-dark bg-light p-1 rounded d-block"
+                                                    style="max-height: 100px; overflow-y: auto;">
+                                                {{ item.msg_content }}
+                                            </code>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if message.msgtype in ['image', 'voice', 'video', 'file'] %}
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">文件详情</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Media ID:</strong> {{ message.media_id or 'N/A' }}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>文件名:</strong> {{ message.original_filename or '无' }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>文件大小:</strong>
+                                    {% if message.file_size %}
+                                    {% set size_kb = message.file_size / 1024 %}
+                                    {% if size_kb < 1024 %} {{ "%.1f" |format(size_kb) }} KB {% else %} {{ "%.1f"
+                                        |format(size_kb / 1024) }} MB {% endif %} {% else %} 0 KB {% endif %} </div>
+                                        <div class="col-md-6">
+                                            <strong>MD5 Hash:</strong> {{ message.file_hash or 'N/A' }}
+                                        </div>
+                                </div>
+
+                                {% if message.media_url and message.download_status == 'success' %}
+                                <div class="alert alert-success d-flex align-items-center" role="alert">
+                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                    <div>
+                                        文件已下载到服务器。
+                                        <button onclick="secureDownload('{{ message.id }}')"
+                                            class="btn btn-sm btn-outline-success fw-bold">
+                                            <i class="bi bi-download me-1"></i>安全下载
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {% if message.msgtype == 'image' %}
+                                <div class="mt-3 text-center">
+                                    <img src="{{ message.media_url }}" class="img-fluid rounded border"
+                                        style="max-height: 400px;" alt="Image Preview">
+                                </div>
+                                {% elif message.msgtype == 'video' %}
+                                <div class="mt-3 text-center">
+                                    <video controls class="img-fluid rounded border" style="max-height: 400px;">
+                                        <source src="{{ message.media_url }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                                {% endif %}
+
+                                {% elif message.download_status == 'failed' %}
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    下载失败: {{ message.download_error }}
+                                    <button onclick="retryDownload('{{ message.msgid }}')"
+                                        class="btn btn-sm btn-outline-danger ms-2">
+                                        <i class="bi bi-arrow-clockwise"></i> 重试
+                                    </button>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning" role="alert">
+                                    <i class="bi bi-hourglass-split me-2"></i>
+                                    文件正在处理或等待下载...
+                                    <button onclick="retryDownload('{{ message.msgid }}')"
+                                        class="btn btn-sm btn-outline-warning text-dark ms-2">
+                                        <i class="bi bi-arrow-clockwise"></i> 重试
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="card collapsed-card">
+                            <div class="card-header bg-light" data-bs-toggle="collapse" href="#rawJson" role="button"
+                                aria-expanded="false">
+                                <h5 class="mb-0 d-flex justify-content-between">
+                                    原始数据 (JSON)
+                                    <i class="bi bi-chevron-down"></i>
+                                </h5>
+                            </div>
+                            <div class="collapse" id="rawJson">
+                                <div class="card-body">
+                                    <pre class="pre-scrollable"><code>{{ message.extra_data }}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/notifications.js"></script>
+    <script>
+        // 安全下载函数
+        async function secureDownload(msgId) {
+            try {
+                // 1. 获取下载令牌
+                const response = await fetch(`/api/files/generate_token/${msgId}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    alert('Download failed: ' + (err.detail || 'Unknown error'));
+                    return;
+                }
+
+                const data = await response.json();
+                const downloadUrl = data.url;
+
+                // 2. 触发下载
+                window.location.href = downloadUrl;
+
+            } catch (e) {
+                console.error(e);
+                alert('An error occurred during download request');
+            }
+        }
+
+        async function retryDownload(msgId) {
+            if (!confirm("确定要重新下载吗？该操作将重置下载状态并重新触发后台任务。")) return;
+            try {
+                const response = await fetch(`/api/messages/${msgId}/retry_download`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    alert('已触发后台下载任务，请稍候（约10-30秒）刷新页面查看结果。');
+                    location.reload();
+                } else {
+                    alert('操作失败: ' + (data.detail || '未知错误'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert('请求异常: ' + e);
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', async function (e) {
+            e.preventDefault();
+            try {
+                await fetch('/auth/logout', { method: 'POST' });
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+            window.location.href = '/login';
+        });
+    </script>
+    <footer class="footer mt-auto py-3 bg-light text-center border-top">
+        <div class="container">
+            <a href="https://github.com/jonysun/wecom" target="_blank" title="GitHub Repository"
+                class="text-decoration-none text-muted me-2">
+                <i class="bi bi-github fs-5 align-middle"></i>
+            </a>
+            <span class="text-muted small">Wx2save v{{ version or '1.0.0' }}</span>
+        </div>
+    </footer>
+</body>
+
+</html>
