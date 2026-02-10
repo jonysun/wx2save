@@ -14,7 +14,7 @@ permissions:
 
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-  IMAGE_NAME: jonysun/wecom
+  IMAGE_NAME: jonysun/wx2save
 
 jobs:
   publish:
