@@ -22,6 +22,24 @@ from app.core.config import (
 )
 
 
+def reload_wecom_service_config():
+    """
+    热加载：刷新本模块中缓存的 WeCom 配置变量。
+    WXBizMsgCrypt 在每次请求时重新创建，所以无需额外处理。
+    """
+    global CORP_ID, TOKEN, ENCODING_AES_KEY, WECOM_API_BASE_URL, WECOM_API_PROXY_TOKEN
+    from app.core.config import (
+        CORP_ID as _cid, TOKEN as _tk, ENCODING_AES_KEY as _aes,
+        WECOM_API_BASE_URL as _url, WECOM_API_PROXY_TOKEN as _pt
+    )
+    CORP_ID = _cid
+    TOKEN = _tk
+    ENCODING_AES_KEY = _aes
+    WECOM_API_BASE_URL = _url
+    WECOM_API_PROXY_TOKEN = _pt
+    logging.getLogger("wecom").info("🔄 WeCom service config reloaded (wecom_service.py)")
+
+
 def batch_get_customer_info(external_userid_list, db: Session):
     """
     批量获取客户详情 (使用 batchget 接口)

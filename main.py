@@ -1868,7 +1868,7 @@ async def api_system_settings_update(
     request: Request,
     setting_data: dict
 ):
-    """更新系统设置 (JSON API)"""
+    """更新系统设置 (JSON API) - 支持热加载"""
     token = request.session.get("access_token") or request.cookies.get("access_token")
     if not token:
         raise HTTPException(status_code=401, detail="Untitled")
@@ -1881,7 +1881,27 @@ async def api_system_settings_update(
         success = save_config(setting_data)
     
     if success:
-         return JSONResponse({"status": "success", "message": "配置已保存，请重启服务生效。"})
+        # === 热加载：保存成功后立即刷新内存中的配置 ===
+        try:
+            from app.core.config import reload_config
+            from app.services import reload_wecom_config
+            from app.services.wecom_service import reload_wecom_service_config
+            from app.services.storage_service import storage as _storage
+
+            # 1. 刷新 config.py 模块级变量
+            reload_config()
+            # 2. 刷新 services/__init__.py 中的 WeCom 变量 + 清空 token 缓存
+            reload_wecom_config()
+            # 3. 刷新 wecom_service.py 中的 WeCom 变量
+            reload_wecom_service_config()
+            # 4. 重建 S3 client (如果启用)
+            _storage.reload()
+
+            logger.info("✅ Hot reload completed: all modules refreshed.")
+            return JSONResponse({"status": "success", "message": "配置已保存并生效（无需重启）。"})
+        except Exception as e:
+            logger.error(f"⚠️ Config saved but hot reload failed: {e}", exc_info=True)
+            return JSONResponse({"status": "success", "message": f"配置已保存，但热加载部分失败: {str(e)}。建议重启服务。"})
     else:
          raise HTTPException(status_code=500, detail="保存配置失败")
 

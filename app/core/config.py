@@ -213,6 +213,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 
 # 重新保存配置的函数（用于更新设置）
 def save_config(new_config):
+    global _config
     try:
         current = _config.copy()
         
@@ -223,17 +224,47 @@ def save_config(new_config):
         if 'storage' not in current: current['storage'] = {}
         current['storage'].update(new_config.get('storage', {}))
         
-        # 暂时只允许修改 wecom/storage 配置，增加安全性
-        # if 'security' not in current: current['security'] = {}
-        # current['security'].update(new_config.get('security', {}))
-        
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             yaml.dump(current, f, default_flow_style=False, allow_unicode=True)
-            
+        
+        # 同步更新内存中的 _config
+        _config = current
         return True
     except Exception as e:
         logger.error(f"❌ Failed to save config: {e}")
         return False
+
+
+def reload_config():
+    """
+    热加载：根据当前 _config 字典刷新所有模块级变量。
+    调用方应在 save_config() 成功后调用此函数。
+    """
+    g = globals()
+
+    # ---- WeCom ----
+    g['CORP_ID'] = get_config("WECOM_CORP_ID", 'wecom', 'corp_id', "")
+    g['CORP_SECRET'] = get_config("WECOM_CORP_SECRET", 'wecom', 'corp_secret', "")
+    g['TOKEN'] = get_config("WECOM_TOKEN", 'wecom', 'token', "")
+    g['ENCODING_AES_KEY'] = get_config("WECOM_ENCODING_AES_KEY", 'wecom', 'encoding_aes_key', "")
+    g['WECOM_API_BASE_URL'] = get_config("WECOM_API_BASE_URL", 'wecom', 'api_base_url', "https://qyapi.weixin.qq.com")
+    if g['WECOM_API_BASE_URL'].endswith('/'):
+        g['WECOM_API_BASE_URL'] = g['WECOM_API_BASE_URL'][:-1]
+    g['WECOM_API_PROXY_TOKEN'] = get_config("WECOM_API_PROXY_TOKEN", 'wecom', 'api_proxy_token', "")
+
+    # ---- S3 / Storage ----
+    g['S3_ENABLED'] = str(get_config("S3_ENABLED", 'storage', 's3_enabled', "False")).lower() == "true"
+    g['S3_ENDPOINT_URL'] = get_config("S3_ENDPOINT_URL", 'storage', 's3_endpoint_url', None)
+    g['S3_ACCESS_KEY'] = get_config("S3_ACCESS_KEY", 'storage', 's3_access_key', "")
+    g['S3_SECRET_KEY'] = get_config("S3_SECRET_KEY", 'storage', 's3_secret_key', "")
+    g['S3_BUCKET_NAME'] = get_config("S3_BUCKET_NAME", 'storage', 's3_bucket_name', "")
+    g['S3_REGION_NAME'] = get_config("S3_REGION_NAME", 'storage', 's3_region_name', "")
+    g['S3_PRESIGNED_EXPIRATION'] = int(get_config("S3_PRESIGNED_EXPIRATION", 'storage', 's3_presigned_expiration', 3600))
+    g['LOCAL_RETENTION_ENABLED'] = str(get_config("LOCAL_RETENTION_ENABLED", 'storage', 'local_retention_enabled', "False")).lower() == "true"
+    g['LOCAL_RETENTION_DAYS'] = int(get_config("LOCAL_RETENTION_DAYS", 'storage', 'local_retention_days', 30))
+
+    logger.info("🔄 Configuration reloaded in-memory (hot reload)")
+
 
 # ==========================================
 # 运行时状态监测
