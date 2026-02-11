@@ -43,24 +43,24 @@ def reset_admin_password():
     try:
         Base.metadata.create_all(bind=engine)
         
-        admin = db.query(User).filter(User.email == "admin@example.com").first()
+        Base.metadata.create_all(bind=engine)
+        
+        # 🔥 Enforce Single User Policy: Delete ALL existing users
+        deleted_count = db.query(User).delete()
+        print(f"🧹 Cleared {deleted_count} existing user account(s).")
         
         random_password = generate_strong_password(16)
         
-        if not admin:
-            admin = User(
-                email="admin@example.com",
-                hashed_password=get_password_hash(random_password),
-                is_superuser=True,
-                is_active=True,
-                first_login=True
-            )
-            db.add(admin)
-            print("✅ 创建了新的管理员账户")
-        else:
-            admin.hashed_password = get_password_hash(random_password)
-            admin.first_login = True
-            print("✅ 重置了现有管理员账户")
+        # Create fresh admin account
+        admin = User(
+            email="admin@example.com",
+            hashed_password=get_password_hash(random_password),
+            is_superuser=True,
+            is_active=True,
+            first_login=True
+        )
+        db.add(admin)
+        print("✅ 创建了新的管理员账户")
         
         db.commit()
         
