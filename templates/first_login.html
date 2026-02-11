@@ -71,11 +71,13 @@
       // 正确读取表单值与 CSRF
       const new_password = document.getElementById('newPassword').value;
       const confirm_password = document.getElementById('confirmPassword').value;
+      const new_username = document.getElementById('newUsername').value;  // Get username
       const csrfToken = document.getElementById('csrfToken').value;
 
       const body = {
         new_password: new_password,
-        confirm_password: confirm_password
+        confirm_password: confirm_password,
+        new_username: new_username // Send username
       };
 
       // 指向后端实际可用的提交端点，并确保发送 Cookie

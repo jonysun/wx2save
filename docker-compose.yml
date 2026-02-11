@@ -10,6 +10,11 @@ services:
     volumes:
       - ./data:/app/data
       - ./media_files:/app/media_files
+      # Mount source code for immediate updates
+      - ./main.py:/app/main.py
+      - ./app:/app/app
+      - ./templates:/app/templates
+      - ./static:/app/static
     environment:
       - TZ=Asia/Shanghai
       - LOG_DIR=/app/app/logs
