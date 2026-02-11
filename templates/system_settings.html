@@ -144,7 +144,7 @@
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">CorpSecret (可选)</label>
+                                        <label class="form-label">CorpSecret</label>
                                         <div class="input-group">
                                             <input type="password" class="form-control" name="corp_secret"
                                                 id="wecom_secret" value="{{ config.wecom.corp_secret or '' }}">
@@ -675,35 +675,66 @@
         const testS3Btn = document.getElementById('testS3Btn');
         if (testS3Btn) {
             testS3Btn.addEventListener('click', async function () {
-                this.disabled = true;
-                const originalText = this.innerHTML;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Testing...';
+                const btn = this;
+                const originalText = btn.innerHTML;
+
+                // Get current form values
+                const s3Enabled = document.getElementById('s3Enabled')?.checked;
+                const s3Endpoint = document.getElementById('s3Endpoint')?.value;
+                const s3AccessKey = document.getElementById('s3AccessKey')?.value;
+                const s3SecretKey = document.getElementById('s3SecretKey')?.value;
+                const s3Bucket = document.getElementById('s3Bucket')?.value;
+                const s3Region = document.getElementById('s3Region')?.value;
+
+                if (!s3Enabled) {
+                    alert('⚠️ 请先启用 S3 存储');
+                    return;
+                }
+
+                if (!s3AccessKey || !s3SecretKey || !s3Bucket) {
+                    alert('⚠️ 请填写完整的 S3 配置信息 (Access Key, Secret Key, Bucket)');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Testing...';
 
                 try {
                     const response = await fetch('/api/storage/test', {
                         method: 'POST',
-                        // 🔥 Use cookie-based auth
                         credentials: 'include',
                         headers: {
                             'Content-Type': 'application/json'
-                            // Removed Authorization header as we use cookies
-                        }
+                        },
+                        // Send current form values as config payload
+                        body: JSON.stringify({
+                            s3_endpoint_url: s3Endpoint,
+                            s3_access_key: s3AccessKey,
+                            s3_secret_key: s3SecretKey,
+                            s3_bucket_name: s3Bucket,
+                            s3_region_name: s3Region
+                        })
                     });
 
                     const result = await response.json();
 
-                    if (response.ok && result.success) {
+                    if (result.success) {
                         alert('✅ 连接成功: ' + result.message);
                     } else {
-                        // Handle non-200 responses or business failures
                         const msg = result.detail || result.message || 'Unknown error';
                         alert('❌ 连接失败: ' + msg);
                     }
                 } catch (error) {
+                    console.error('Test connection error:', error);
                     alert('❌ 请求错误: ' + error.message);
                 } finally {
-                    this.disabled = false;
-                    this.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            });
+        }
+        btn.disabled = false;
+        btn.innerHTML = originalText;
                 }
             });
         }

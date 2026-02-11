@@ -1755,17 +1755,38 @@ async def batch_download_messages_legacy(request: BatchActionRequest, background
 # ----------------------
 # 系统设置页 (原系统状态)
 # ----------------------
+class StorageConfigTest(BaseModel):
+    s3_endpoint_url: Optional[str] = None
+    s3_access_key: Optional[str] = None
+    s3_secret_key: Optional[str] = None
+    s3_bucket_name: Optional[str] = None
+    s3_region_name: Optional[str] = None
+
 @app.post("/api/storage/test")
-async def test_storage_connection(current_user: User = Depends(get_current_active_user)):
-    """测试存储连接"""
-    if not current_user.is_admin:
+async def test_storage_connection(
+    config: Optional[StorageConfigTest] = None,
+    current_user: User = Depends(get_current_active_user)
+):
+    """测试存储连接 (支持传入配置进行测试)"""
+    if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="需要管理员权限")
     
-    # 重新加载配置以确保使用最新的（虽然后端重启前可能还是旧的，但storage service读的是内存config）
-    # 注意：这里我们测试的是当前的 storage service 实例
-    
     try:
-        success, msg = storage.check_connection()
+        # 如果传入了配置，使用传入的配置进行测试
+        if config and config.s3_access_key:
+            logger.info("🧪 Testing S3 connection with PROVIDED configuration...")
+            success, msg = storage.test_connection_with_config(
+                endpoint=config.s3_endpoint_url,
+                access_key=config.s3_access_key,
+                secret_key=config.s3_secret_key,
+                bucket_name=config.s3_bucket_name,
+                region_name=config.s3_region_name
+            )
+        else:
+            # 否则测试当前已保存的配置
+            logger.info("🧪 Testing S3 connection with SAVED configuration...")
+            success, msg = storage.check_connection()
+            
         return {"success": success, "message": msg}
     except Exception as e:
         logger.error(f"S3 Connection Test Error: {e}")

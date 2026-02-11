@@ -46,27 +46,53 @@ class StorageService:
 
     def check_connection(self) -> tuple[bool, str]:
         """
-        检查S3连接是否正常
+        检查S3连接是否正常 (使用当前加载的配置)
         Returns: (success, message)
         """
         if not S3_ENABLED or not self.s3_client:
             return False, "S3 not enabled or client init failed"
         
+        return self._do_check_connection(self.s3_client, S3_BUCKET_NAME)
+
+    def test_connection_with_config(self, endpoint, access_key, secret_key, bucket_name, region_name) -> tuple[bool, str]:
+        """
+        使用提供的配置测试S3连接 (不保存)
+        """
         try:
-            # 尝试列出 bucket (HEAD 请求，开销极小)
-            # 或者列出对象 (ListObjectsV2 with limit 1)
-            # 某些权限可能不允许 ListBucket，尝试 HeadBucket
+             # 自动补全协议头
+            if endpoint and not endpoint.startswith(('http://', 'https://')):
+                endpoint = f"http://{endpoint}"
+            
+            # 创建临时客户端
+            temp_client = boto3.client(
+                's3',
+                endpoint_url=endpoint,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+                region_name=region_name,
+                # 显式设置超时，避免测试时卡死
+                config=boto3.session.Config(connect_timeout=5, read_timeout=5)
+            )
+            
+            return self._do_check_connection(temp_client, bucket_name)
+        except Exception as e:
+            return False, f"Client Init Failed: {str(e)}"
+
+    def _do_check_connection(self, client, bucket) -> tuple[bool, str]:
+        """内部通用检查逻辑"""
+        try:
+            # 尝试 HeadBucket (检查 Bucket 是否存在且有权限)
             try:
-                self.s3_client.head_bucket(Bucket=S3_BUCKET_NAME)
+                client.head_bucket(Bucket=bucket)
                 return True, "Connected"
             except ClientError as e:
                 # 404 Not Found (Bucket不存在) -> Error
                 # 403 Forbidden (无权限) -> Error
                 error_code = e.response.get("Error", {}).get("Code")
                 if error_code == "404":
-                    return False, f"Bucket '{S3_BUCKET_NAME}' does not exist"
+                    return False, f"Bucket '{bucket}' does not exist"
                 elif error_code == "403":
-                    return False, f"Access denied to bucket '{S3_BUCKET_NAME}'"
+                    return False, f"Access denied to bucket '{bucket}'"
                 else:
                     raise e
                     
