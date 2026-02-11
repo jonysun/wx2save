@@ -682,18 +682,25 @@
                 try {
                     const response = await fetch('/api/storage/test', {
                         method: 'POST',
+                        // 🔥 Use cookie-based auth
+                        credentials: 'include',
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            'Content-Type': 'application/json'
+                            // Removed Authorization header as we use cookies
                         }
                     });
+
                     const result = await response.json();
-                    if (result.success) {
+
+                    if (response.ok && result.success) {
                         alert('✅ 连接成功: ' + result.message);
                     } else {
-                        alert('❌ 连接失败: ' + result.message);
+                        // Handle non-200 responses or business failures
+                        const msg = result.detail || result.message || 'Unknown error';
+                        alert('❌ 连接失败: ' + msg);
                     }
                 } catch (error) {
-                    alert('❌ 请求错误: ' + error);
+                    alert('❌ 请求错误: ' + error.message);
                 } finally {
                     this.disabled = false;
                     this.innerHTML = originalText;

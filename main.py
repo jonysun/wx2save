@@ -1168,10 +1168,21 @@ async def first_login_password_submit(request: Request):
             user.last_password_change = datetime.datetime.utcnow()
 
             # 🔥 新增：修改用户名 (可选)
+            # 用户希望修改的是登录账号(Email/Username)，不仅仅是显示名
             new_username = data.get("new_username")
             if new_username and new_username.strip():
+                new_username = new_username.strip()
                 logger.info(f"User {email} renaming to {new_username}")
-                user.username = new_username.strip()
+                # 检查是否存在同名用户
+                existing_user = db.query(User).filter(User.email == new_username).first()
+                if existing_user and existing_user.id != user.id:
+                    return JSONResponse(status_code=400, content={"detail": "Username/Email already exists", "success": False})
+                
+                # 更新 email 字段，因为它是登录标识
+                user.email = new_username
+                # 同时更新 username 字段作为显示名 (如果模型中有)
+                if hasattr(user, 'username'):
+                    user.username = new_username
 
             # 更新 token 版本
             user.token_version += 1
