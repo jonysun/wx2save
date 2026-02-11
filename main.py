@@ -1122,6 +1122,7 @@ async def first_login_password_submit(request: Request):
                 content={"detail": "Invalid session token", "success": False}
             )
 
+        db = SessionLocal()
         try:
             user = db.query(User).filter(User.email == email).first()
             if user is None:
