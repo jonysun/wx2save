@@ -34,9 +34,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # 安装运行时必需的系统库 (如 libffi 用于 cryptography)
 # tzdata 用于设置时区
+# 安装运行时必需的系统库 (如 libffi 用于 cryptography)
+# tzdata 用于设置时区
+# bash 用于终端访问
 RUN apk add --no-cache \
     libffi \
     tzdata \
+    bash \
     && cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime \
     && echo "Asia/Shanghai" > /etc/timezone
 
@@ -46,6 +50,11 @@ COPY --from=builder /install /usr/local
 # 复制项目代码
 # 注意：只复制必要文件，利用 .dockerignore 排除无关文件
 COPY . .
+
+# 创建 reset_password 命令别名
+RUN echo '#!/bin/sh' > /usr/local/bin/reset_password && \
+    echo 'python /app/scripts/reset_password.py' >> /usr/local/bin/reset_password && \
+    chmod +x /usr/local/bin/reset_password
 
 # 创建必要的目录并设置权限
 # 使用非 root 用户运行更安全（可选，这里为了简单仍用# Create necessary directories
