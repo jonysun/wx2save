@@ -31,9 +31,7 @@
             <form id="firstLoginForm">
               <input type="hidden" id="csrfToken" value="{{ csrf_token }}">
 
-              <div class="mb-3">
-                <input type="password" id="currentPassword" class="form-control" required>
-              </div>
+              <input type="hidden" id="csrfToken" value="{{ csrf_token }}">
 
               <div class="mb-3">
                 <label class="form-label">新用户名 <span class="text-muted small">(可选)</span></label>
@@ -71,13 +69,11 @@
       e.preventDefault();
 
       // 正确读取表单值与 CSRF
-      const current_password = document.getElementById('currentPassword').value;
       const new_password = document.getElementById('newPassword').value;
       const confirm_password = document.getElementById('confirmPassword').value;
       const csrfToken = document.getElementById('csrfToken').value;
 
       const body = {
-        current_password: current_password,
         new_password: new_password,
         confirm_password: confirm_password
       };

@@ -1097,7 +1097,7 @@ async def first_login_password_submit(request: Request):
     """处理首次登录密码修改表单提交：更新密码并在响应中设置新的 access_token Cookie"""
     try:
         data = await request.json()
-        current_password = data.get("current_password")
+        # current_password = data.get("current_password")
         new_password = data.get("new_password")
         confirm_password = data.get("confirm_password")
 
@@ -1140,12 +1140,12 @@ async def first_login_password_submit(request: Request):
                 logger.warning(f"❌ CSRF validation failed: header={csrf_token}, session={session_csrf}")
                 return JSONResponse(status_code=403, content={"detail": "Invalid CSRF token", "success": False})
 
-            if not current_password or not new_password or not confirm_password:
+            if not new_password or not confirm_password:
                 return JSONResponse(status_code=400, content={"detail": "Missing password fields", "success": False})
 
-            if not verify_password(current_password, user.hashed_password):
-                logger.warning(f"❌ Current password verification failed for user: {email}")
-                return JSONResponse(status_code=400, content={"detail": "Current password is incorrect", "success": False})
+            # if not verify_password(current_password, user.hashed_password):
+            #     logger.warning(f"❌ Current password verification failed for user: {email}")
+            #     return JSONResponse(status_code=400, content={"detail": "Current password is incorrect", "success": False})
 
             if new_password != confirm_password:
                 return JSONResponse(status_code=400, content={"detail": "New password and confirm password do not match", "success": False})
@@ -2395,17 +2395,39 @@ async def change_username(
 async def restart_system(
     current_user: User = Depends(get_current_active_user)
 ):
-    """重启系统 (通过退出进程让 Docker 自动重启)"""
+    """重启系统 (使用 os.execv 重新执行当前脚本)"""
     if not current_user.is_superuser:
         raise HTTPException(status_code=403, detail="需要管理员权限")
     
     def _restart():
         import time
-        time.sleep(1) # 给一点时间让响应发送完毕
-        logger.warning("🔄 System restarting via process exit...")
-        os._exit(1) # 强制退出，依赖 Docker restart policy
+        import sys
+        import os
+        
+        logger.warning("🔄 System restarting via os.execv in 1s...")
+        time.sleep(1)
+        
+        try:
+            # 刷新 stdout/stderr 确保日志输出
+            sys.stdout.flush()
+            sys.stderr.flush()
+            
+            # 使用 os.execv 替换当前进程
+            # sys.executable 是 python 解释器路径 (e.g., /usr/local/bin/python)
+            # sys.argv 是命令行参数 (e.g., ['main.py'])
+            # 注意: 如果是用 uvicorn main:app 启动的，sys.executable 是 uvicorn，sys.argv 是参数
+            
+            # 打印调试信息
+            logger.info(f"Re-executing: {sys.executable} {sys.argv}")
+            
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+            
+        except Exception as e:
+            logger.error(f"❌ Restart failed: {e}")
+            # Fallback to hard exit if exec fails
+            os._exit(1)
 
-    # 在后台线程执行重启，确保当前请求能返回响应
+    # 在后台线程执行重启
     import threading
     threading.Thread(target=_restart).start()
     
