@@ -42,6 +42,7 @@
       volumes:
         - ./data:/app/data                 # 配置文件目录config.yaml
         - ./media_files:/app/media_files   # 下载的目录
+        - ./logs:/app/app/logs             # 日志目录
       environment:
         - TZ=Asia/Shanghai
         - LOG_DIR=/app/app/logs
@@ -188,4 +189,4 @@ A:
 3. 检查日志 `logs/wecom.log` 看是否有具体的报错信息。
 
 **Q: 如何重置管理员密码？**
-A: 删除 `data/wecom_messages.db` (警告：会丢失所有数据！) 后重启，系统会重新初始化并生成新密码。或者通过命令行执行python reset_password.py。
+A: 删除 `data/wecom_messages.db` (警告：会丢失所有数据！) 后重启，系统会重新初始化并生成新密码。或者进入容器终端，通过命令行执行reset_password。
