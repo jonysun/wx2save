@@ -125,8 +125,8 @@ logger.info("="*60)
 # ----------------------
 # 数据库配置
 # ----------------------
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+# Refactored to use shared configuration from app.core.database to ensure consistent settings (e.g. WAL mode)
+from app.core.database import engine, SessionLocal
 Base.metadata.create_all(bind=engine)
 
 

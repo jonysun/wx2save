@@ -12,8 +12,16 @@ logger = logging.getLogger("wecom")
 # Create database engine
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}  # SQLite specific
+    connect_args={"check_same_thread": False},  # SQLite specific
 )
+
+# Ensure WAL mode is disabled for compatibility with Docker volumes on Windows
+from sqlalchemy import event
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=DELETE")
+    cursor.close()
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

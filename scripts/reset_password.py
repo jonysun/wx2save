@@ -28,6 +28,15 @@ def generate_strong_password(length=16):
 
 def reset_admin_password():
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    
+    # Ensure WAL mode is disabled for compatibility with Docker volumes on Windows
+    from sqlalchemy import event
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=DELETE")
+        cursor.close()
+
     SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
     db = SessionLocal()
     
