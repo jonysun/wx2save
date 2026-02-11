@@ -430,8 +430,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function togglePassword(fieldId) {
-            const field = document.getElementById(fieldId);
-            const icon = field.nextElementSibling.querySelector('i');
+            var field = document.getElementById(fieldId);
+            var icon = field.nextElementSibling.querySelector('i');
             if (field.type === 'password') {
                 field.type = 'text';
                 icon.classList.remove('bi-eye');
@@ -448,21 +448,21 @@
             e.preventDefault();
             try {
                 await fetch('/auth/logout', { method: 'POST' });
-            } catch (error) {
-                console.error('Logout failed:', error);
+            } catch (err) {
+                console.error('Logout failed:', err);
             }
             window.location.href = '/login';
         });
 
         // Save Config Logic
-        const saveForm = document.getElementById('saveConfigForm');
-        const confirmModal = new bootstrap.Modal(document.getElementById('confirmSaveModal'));
-        const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
-        const confirmSaveBtn = document.getElementById('confirmSaveBtn');
+        var saveForm = document.getElementById('saveConfigForm');
+        var confirmModal = new bootstrap.Modal(document.getElementById('confirmSaveModal'));
+        var resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+        var confirmSaveBtn = document.getElementById('confirmSaveBtn');
 
         // Toggle S3 Fields
-        const s3EnabledCheckbox = document.getElementById('s3_enabled');
-        const s3ConfigFields = document.getElementById('s3ConfigFields');
+        var s3EnabledCheckbox = document.getElementById('s3_enabled');
+        var s3ConfigFields = document.getElementById('s3ConfigFields');
         if (s3EnabledCheckbox && s3ConfigFields) {
             s3EnabledCheckbox.addEventListener('change', function () {
                 if (this.checked) {
@@ -481,7 +481,7 @@
             });
         }
 
-        const saveStorageForm = document.getElementById('saveStorageConfigForm');
+        var saveStorageForm = document.getElementById('saveStorageConfigForm');
         if (saveStorageForm) {
             saveStorageForm.addEventListener('submit', function (e) {
                 e.preventDefault();
@@ -491,207 +491,175 @@
         }
 
         // Change Username Logic
-        document.getElementById('changeUsernameForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
+        var changeUsernameForm = document.getElementById('changeUsernameForm');
+        if (changeUsernameForm) {
+            changeUsernameForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                var newUsername = document.getElementById('newUsernameSettings').value;
+                var currentPassword = document.getElementById('currentPasswordForUser').value;
 
-            const newUsername = document.getElementById('newUsernameSettings').value;
-            const currentPassword = document.getElementById('currentPasswordForUser').value;
+                if (!confirm('确定要修改用户名为: ' + newUsername + ' 吗？')) return;
 
-            if (!confirm("确定要修改用户名为: " + newUsername + " 吗？")) return;
-
-            try {
-                const response = await fetch('/api/user/username', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        new_username: newUsername,
-                        current_password: currentPassword
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.status === 'success') {
-                    alert(data.message);
-                    // 用户名(Hash ID)已变更，旧token失效，必须跳转登录页
-                    window.location.href = '/login';
-                } else {
-                    alert('修改失败: ' + (data.detail || '未知错误'));
+                try {
+                    var response = await fetch('/api/user/username', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            new_username: newUsername,
+                            current_password: currentPassword
+                        })
+                    });
+                    var data = await response.json();
+                    if (response.ok && data.status === 'success') {
+                        alert(data.message);
+                        window.location.href = '/login';
+                    } else {
+                        alert('修改失败: ' + (data.detail || '未知错误'));
+                    }
+                } catch (err) {
+                    alert('请求失败: ' + err.message);
                 }
-            } catch (error) {
-                alert('请求失败: ' + error.message);
-            }
-        });
+            });
+        }
 
         // Change Password Logic
-        const changePasswordForm = document.getElementById('changePasswordForm');
+        var changePasswordForm = document.getElementById('changePasswordForm');
         if (changePasswordForm) {
             changePasswordForm.addEventListener('submit', async function (e) {
                 e.preventDefault();
-                const currentPassword = document.getElementById('current_password').value;
-                const newPassword = document.getElementById('new_password').value;
-                const confirmPassword = document.getElementById('confirm_password').value;
+                var curPwd = document.getElementById('current_password').value;
+                var newPwd = document.getElementById('new_password').value;
+                var confirmPwd = document.getElementById('confirm_password').value;
 
-                if (newPassword !== confirmPassword) {
+                if (newPwd !== confirmPwd) {
                     alert('两次输入的新密码不一致');
                     return;
                 }
-
                 if (!confirm('确定要修改密码吗？修改成功后需要重新登录。')) {
                     return;
                 }
 
                 try {
-                    const response = await fetch('/api/user/password', {
+                    var response = await fetch('/api/user/password', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            current_password: currentPassword,
-                            new_password: newPassword
+                            current_password: curPwd,
+                            new_password: newPwd
                         })
                     });
-
-                    const result = await response.json();
-
+                    var result = await response.json();
                     if (response.ok) {
                         alert('密码修改成功，请重新登录');
                         window.location.href = '/login';
                     } else {
                         alert('修改失败: ' + (result.detail || '未知错误'));
                     }
-                } catch (error) {
-                    alert('请求失败: ' + error.message);
+                } catch (err) {
+                    alert('请求失败: ' + err.message);
                 }
             });
         }
 
-        confirmSaveBtn.addEventListener('click', async function () {
-            confirmModal.hide();
+        // Confirm Save Button Logic
+        if (confirmSaveBtn) {
+            confirmSaveBtn.addEventListener('click', async function () {
+                confirmModal.hide();
+                var payload = {};
+                var formId = confirmSaveBtn.dataset.formId || 'saveConfigForm';
 
-            let payload = {};
-            // Determine which form triggered the save
-            // Note: We need to set this when form submits
-            const formId = confirmSaveBtn.dataset.formId || 'saveConfigForm';
-
-            if (formId === 'saveConfigForm') {
-                const formData = new FormData(document.getElementById('saveConfigForm'));
-                // Send as structured data to match new API logic, or rely on compatibility check
-                // Let's send structured data for cleaner future
-                payload = { "wecom": Object.fromEntries(formData.entries()) };
-            } else if (formId === 'saveStorageConfigForm') {
-                const formData = new FormData(document.getElementById('saveStorageConfigForm'));
-                const rawData = Object.fromEntries(formData.entries());
-
-                // Checkbox handling
-                const s3Checkbox = document.getElementById('s3_enabled');
-                rawData.s3_enabled = s3Checkbox ? s3Checkbox.checked : false;
-
-                const retentionCheckbox = document.getElementById('local_retention_enabled');
-                rawData.local_retention_enabled = retentionCheckbox ? retentionCheckbox.checked : false;
-
-                payload = { "storage": rawData };
-            }
-
-            try {
-                const response = await fetch('/api/settings/update', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-
-                const resultTitle = document.getElementById('resultTitle');
-                const resultBody = document.getElementById('resultBody');
-
-                if (response.ok && result.status === 'success') {
-                    resultTitle.innerText = '✅ 保存成功';
-                    resultTitle.className = 'modal-title text-success';
-                    resultBody.innerHTML = `
-                        <p>${result.message}</p>
-                        <div class="alert alert-warning mt-3">
-                            <strong>⚠️ 需要重启系统才能生效</strong>
-                        </div>
-                        <div class="d-grid gap-2 mt-3">
-                            <button class="btn btn-primary" id="restartNowBtn">
-                                <i class="bi bi-arrow-clockwise me-2"></i>立即重启系统
-                            </button>
-                            <button class="btn btn-secondary" data-bs-dismiss="modal">稍后手动重启</button>
-                        </div>
-                    `;
-
-                    // 绑定重启按钮事件
-                    setTimeout(() => {
-                        const restartBtn = document.getElementById('restartNowBtn');
-                        if (restartBtn) {
-                            restartBtn.addEventListener('click', async function () {
-                                this.disabled = true;
-                                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>正在重启...';
-
-                                try {
-                                    const restartResp = await fetch('/api/system/restart', {
-                                        method: 'POST'
-                                    });
-
-                                    if (restartResp.ok) {
-                                        resultBody.innerHTML = `
-                                            <div class="alert alert-info">
-                                                <div class="spinner-border spinner-border-sm me-2"></div>
-                                                系统正在重启，请稍候...
-                                            </div>
-                                            <p class="text-muted small">页面将在10秒后自动刷新</p>
-                                        `;
-
-                                        // 10秒后刷新页面
-                                        setTimeout(() => {
-                                            window.location.reload();
-                                        }, 10000);
-                                    }
-                                } catch (error) {
-                                    resultBody.innerHTML = `<div class="alert alert-danger">重启请求失败: ${error.message}</div>`;
-                                }
-                            });
-                        }
-                    }, 100);
-                } else {
-                    throw new Error(result.detail || '保存失败');
+                if (formId === 'saveConfigForm') {
+                    var formData = new FormData(document.getElementById('saveConfigForm'));
+                    payload = { "wecom": Object.fromEntries(formData.entries()) };
+                } else if (formId === 'saveStorageConfigForm') {
+                    var formData2 = new FormData(document.getElementById('saveStorageConfigForm'));
+                    var rawData = Object.fromEntries(formData2.entries());
+                    var s3Cb = document.getElementById('s3_enabled');
+                    rawData.s3_enabled = s3Cb ? s3Cb.checked : false;
+                    var retCb = document.getElementById('local_retention_enabled');
+                    rawData.local_retention_enabled = retCb ? retCb.checked : false;
+                    payload = { "storage": rawData };
                 }
-            } catch (error) {
-                document.getElementById('resultTitle').innerText = '❌ 保存失败';
-                document.getElementById('resultTitle').className = 'modal-title text-danger';
-                document.getElementById('resultBody').innerText = error.message;
-            }
 
-            resultModal.show();
-        });
+                try {
+                    var response = await fetch('/api/settings/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    var result = await response.json();
+                    var resultTitle = document.getElementById('resultTitle');
+                    var resultBody = document.getElementById('resultBody');
+
+                    if (response.ok && result.status === 'success') {
+                        resultTitle.innerText = '✅ 保存成功';
+                        resultTitle.className = 'modal-title text-success';
+                        resultBody.innerHTML = '<p>' + result.message + '</p>'
+                            + '<div class="alert alert-warning mt-3"><strong>⚠️ 需要重启系统才能生效</strong></div>'
+                            + '<div class="d-grid gap-2 mt-3">'
+                            + '<button class="btn btn-primary" id="restartNowBtn"><i class="bi bi-arrow-clockwise me-2"></i>立即重启系统</button>'
+                            + '<button class="btn btn-secondary" data-bs-dismiss="modal">稍后手动重启</button>'
+                            + '</div>';
+
+                        setTimeout(function () {
+                            var restartBtn = document.getElementById('restartNowBtn');
+                            if (restartBtn) {
+                                restartBtn.addEventListener('click', async function () {
+                                    this.disabled = true;
+                                    this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>正在重启...';
+                                    try {
+                                        var restartResp = await fetch('/api/system/restart', { method: 'POST' });
+                                        if (restartResp.ok) {
+                                            resultBody.innerHTML = '<div class="alert alert-info">'
+                                                + '<div class="spinner-border spinner-border-sm me-2"></div>'
+                                                + '系统正在重启，请稍候...</div>'
+                                                + '<p class="text-muted small">页面将在10秒后自动刷新</p>';
+                                            setTimeout(function () { window.location.reload(); }, 10000);
+                                        }
+                                    } catch (restartErr) {
+                                        resultBody.innerHTML = '<div class="alert alert-danger">重启请求失败: ' + restartErr.message + '</div>';
+                                    }
+                                });
+                            }
+                        }, 100);
+                    } else {
+                        throw new Error(result.detail || '保存失败');
+                    }
+                } catch (err) {
+                    document.getElementById('resultTitle').innerText = '❌ 保存失败';
+                    document.getElementById('resultTitle').className = 'modal-title text-danger';
+                    document.getElementById('resultBody').innerText = err.message;
+                }
+
+                resultModal.show();
+            });
+        }
 
         // Test S3 Connection Logic
-        const testS3Btn = document.getElementById('testS3Btn');
+        var testS3Btn = document.getElementById('testS3Btn');
         if (testS3Btn) {
             testS3Btn.addEventListener('click', async function () {
-                const btn = this;
-                const originalText = btn.innerHTML;
+                var btn = this;
+                var originalText = btn.innerHTML;
 
-                // Get current form values
-                const s3Enabled = document.getElementById('s3Enabled')?.checked;
-                const s3Endpoint = document.getElementById('s3Endpoint')?.value;
-                const s3AccessKey = document.getElementById('s3AccessKey')?.value;
-                const s3SecretKey = document.getElementById('s3SecretKey')?.value;
-                const s3Bucket = document.getElementById('s3Bucket')?.value;
-                const s3Region = document.getElementById('s3Region')?.value;
+                // Get current form values (use correct HTML element IDs with underscores)
+                var s3Chk = document.getElementById('s3_enabled');
+                var s3Endpoint = document.getElementById('s3_endpoint_url');
+                var s3AccessKey = document.getElementById('s3_access_key');
+                var s3SecretKey = document.getElementById('s3_secret_key');
+                var s3Bucket = document.getElementById('s3_bucket_name');
+                var s3Region = document.getElementById('s3_region_name');
 
-                if (!s3Enabled) {
+                if (!s3Chk || !s3Chk.checked) {
                     alert('⚠️ 请先启用 S3 存储');
                     return;
                 }
 
-                if (!s3AccessKey || !s3SecretKey || !s3Bucket) {
+                var accessKeyVal = s3AccessKey ? s3AccessKey.value : '';
+                var secretKeyVal = s3SecretKey ? s3SecretKey.value : '';
+                var bucketVal = s3Bucket ? s3Bucket.value : '';
+
+                if (!accessKeyVal || !secretKeyVal || !bucketVal) {
                     alert('⚠️ 请填写完整的 S3 配置信息 (Access Key, Secret Key, Bucket)');
                     return;
                 }
@@ -700,41 +668,31 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Testing...';
 
                 try {
-                    const response = await fetch('/api/storage/test', {
+                    var response = await fetch('/api/storage/test', {
                         method: 'POST',
                         credentials: 'include',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        // Send current form values as config payload
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            s3_endpoint_url: s3Endpoint,
-                            s3_access_key: s3AccessKey,
-                            s3_secret_key: s3SecretKey,
-                            s3_bucket_name: s3Bucket,
-                            s3_region_name: s3Region
+                            s3_endpoint_url: s3Endpoint ? s3Endpoint.value : '',
+                            s3_access_key: accessKeyVal,
+                            s3_secret_key: secretKeyVal,
+                            s3_bucket_name: bucketVal,
+                            s3_region_name: s3Region ? s3Region.value : ''
                         })
                     });
-
-                    const result = await response.json();
-
+                    var result = await response.json();
                     if (result.success) {
                         alert('✅ 连接成功: ' + result.message);
                     } else {
-                        const msg = result.detail || result.message || 'Unknown error';
+                        var msg = result.detail || result.message || 'Unknown error';
                         alert('❌ 连接失败: ' + msg);
                     }
-                } catch (error) {
-                    console.error('Test connection error:', error);
-                    alert('❌ 请求错误: ' + error.message);
+                } catch (err) {
+                    console.error('Test connection error:', err);
+                    alert('❌ 请求错误: ' + err.message);
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
-                }
-            });
-        }
-        btn.disabled = false;
-        btn.innerHTML = originalText;
                 }
             });
         }
