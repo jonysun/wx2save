@@ -251,5 +251,52 @@ class StorageService:
             # 本地文件链接 (假设前端可以通过 /media/filename 访问)
             return f"/media/{filename}"
 
+    def reload(self):
+        """
+        热加载：重新读取 config 模块的最新值，重建 S3 client。
+        同时刷新本模块中被其他方法引用的模块级配置变量。
+        """
+        global S3_ENABLED, S3_ENDPOINT_URL, S3_ACCESS_KEY, S3_SECRET_KEY
+        global S3_BUCKET_NAME, S3_REGION_NAME, S3_PRESIGNED_EXPIRATION
+        global MEDIA_STORAGE_PATH
+
+        from app.core.config import (
+            S3_ENABLED as _se, S3_ENDPOINT_URL as _eu, S3_ACCESS_KEY as _ak,
+            S3_SECRET_KEY as _sk, S3_BUCKET_NAME as _bn, S3_REGION_NAME as _rn,
+            S3_PRESIGNED_EXPIRATION as _pe, MEDIA_STORAGE_PATH as _mp
+        )
+        S3_ENABLED = _se
+        S3_ENDPOINT_URL = _eu
+        S3_ACCESS_KEY = _ak
+        S3_SECRET_KEY = _sk
+        S3_BUCKET_NAME = _bn
+        S3_REGION_NAME = _rn
+        S3_PRESIGNED_EXPIRATION = _pe
+        MEDIA_STORAGE_PATH = _mp
+
+        self.s3_client = None
+        if S3_ENABLED:
+            endpoint = S3_ENDPOINT_URL
+            if endpoint and not endpoint.startswith(('http://', 'https://')):
+                endpoint = f"http://{endpoint}"
+                logger.warning(f"⚠️ S3 Endpoint missing protocol, auto-fixed to: {endpoint}")
+
+            logger.info(f"🔄 Reloading S3 Client... Endpoint: {endpoint}, Region: {S3_REGION_NAME}, Bucket: {S3_BUCKET_NAME}")
+            try:
+                self.s3_client = boto3.client(
+                    's3',
+                    endpoint_url=endpoint,
+                    aws_access_key_id=S3_ACCESS_KEY,
+                    aws_secret_access_key=S3_SECRET_KEY,
+                    region_name=S3_REGION_NAME
+                )
+                logger.info(f"✅ S3 Storage reloaded (Bucket: {S3_BUCKET_NAME})")
+            except Exception as e:
+                logger.error(f"❌ Failed to reload S3 client: {e}", exc_info=True)
+                self.s3_client = None
+        else:
+            logger.info("ℹ️ S3 Storage is DISABLED after config reload.")
+
+
 # 单例实例
 storage = StorageService()

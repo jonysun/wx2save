@@ -291,6 +291,28 @@ def update_cursor_for_kfid(open_kfid, new_cursor, db):
     return True
 
 
+def reload_wecom_config():
+    """
+    热加载：刷新本模块中缓存的 WeCom 配置变量，清空 access_token 缓存。
+    """
+    global CORP_ID, CORP_SECRET, WECOM_API_BASE_URL, WECOM_API_PROXY_TOKEN
+    global _access_token_cache
+
+    from app.core.config import (
+        CORP_ID as _cid, CORP_SECRET as _cs,
+        WECOM_API_BASE_URL as _url, WECOM_API_PROXY_TOKEN as _pt
+    )
+    CORP_ID = _cid
+    CORP_SECRET = _cs
+    WECOM_API_BASE_URL = _url
+    WECOM_API_PROXY_TOKEN = _pt
+
+    # 清空旧的 access_token（旧凭据已失效）
+    _access_token_cache = {'token': None, 'expires_at': 0}
+
+    logger.info("🔄 WeCom config reloaded (services/__init__.py), access_token cache cleared.")
+
+
 __all__ = [
     "APP_START_TIME",
     "get_db_for_async",
@@ -302,6 +324,7 @@ __all__ = [
     "save_media_file",
     "get_cursor_for_kfid",
     "update_cursor_for_kfid",
+    "reload_wecom_config",
     "engine",
     "SessionLocal"
 ]
