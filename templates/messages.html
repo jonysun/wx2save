@@ -532,6 +532,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/notifications.js"></script>
     <script>
+        const csrfToken = {{ csrf_token|tojson }};
+
         // 语音播放逻辑
         let currentAudio = null; // Can hold Audio object or BenzAMRRecorder instance
         let currentBtn = null;
@@ -576,7 +578,10 @@
 
             try {
                 // Get Token/URL
-                const response = await fetch(`/api/files/generate_token/${msgId}`, { method: 'POST' });
+                const response = await fetch(`/api/files/generate_token/${msgId}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
                 if (!response.ok) throw new Error('Token failed');
                 const data = await response.json();
                 const url = data.url;
@@ -643,7 +648,10 @@
         // 安全查看
         async function secureView(msgId) {
             try {
-                const response = await fetch(`/api/files/generate_token/${msgId}?disposition=inline`, { method: 'POST' });
+                const response = await fetch(`/api/files/generate_token/${msgId}?disposition=inline`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
                 if (!response.ok) {
                     const err = await response.json();
                     alert('View failed: ' + (err.detail || 'Unknown error'));
@@ -660,7 +668,10 @@
         // 安全下载函数
         async function secureDownload(msgId) {
             try {
-                const response = await fetch(`/api/files/generate_token/${msgId}`, { method: 'POST' });
+                const response = await fetch(`/api/files/generate_token/${msgId}`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
                 if (!response.ok) {
                     const err = await response.json();
                     alert('Download failed: ' + (err.detail || 'Unknown error'));
@@ -728,7 +739,8 @@
                 const response = await fetch('/api/messages/batch_delete', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
                     },
                     body: JSON.stringify({ message_ids: messageIds })
                 });
@@ -764,7 +776,10 @@
                 // 1. 启动下载任务
                 const response = await fetch('/api/messages/batch_download/start', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
                     body: JSON.stringify({ message_ids: messageIds })
                 });
 
@@ -835,7 +850,10 @@
         document.getElementById('logoutBtn').addEventListener('click', async function (e) {
             e.preventDefault();
             try {
-                await fetch('/auth/logout', { method: 'POST' });
+                await fetch('/auth/logout', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
             } catch (error) {
                 console.error('Logout failed:', error);
             }

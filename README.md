@@ -56,8 +56,8 @@
    mkdir -p data
    mkdir -p media_files
    ```
-   后续docker会在data目录下创建config.yaml配置文件，并挂载到容器中。
-   - 也可以先手动创建config.yaml文件，并填好企业微信的配置信息。
+   后续 Docker 会在 `data/` 目录下创建本地 `config.yaml` 配置文件，并挂载到容器中。
+   - 仓库内提供的是 `data/config.example.yaml` 示例文件；实际 `data/config.yaml`、数据库和日志属于本地运行文件，不应提交到版本库。
 
   - 推荐docker compose 部署:
   ```bash
@@ -123,7 +123,7 @@ python main.py
 
 ## 📝 配置说明
 
-核心配置文件位于 `data/config.yaml`。你需要填入企业微信后台提供的以下信息：
+运行时核心配置文件位于 `data/config.yaml`。首次部署时可从 `data/config.example.yaml` 复制生成，并填入企业微信后台提供的以下信息：
 
 ```yaml
 wecom:

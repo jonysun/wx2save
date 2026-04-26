@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
         'backup_count': 7
     },
     'database': {
-        # Update URL to match Docker container path (mapped from host ./data to /app/data)
+        # Docker-first default. Local runtime is auto-corrected in app.core.config when needed.
         'url': "sqlite:////app/data/wecom_messages.db"
     },
     'storage': {
@@ -46,35 +46,43 @@ DEFAULT_CONFIG = {
     }
 }
 
+
+def safe_print(message):
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        fallback = message.encode('ascii', errors='ignore').decode('ascii')
+        print(fallback)
+
 def init_config():
     if os.path.exists(CONFIG_FILE):
         if os.path.isdir(CONFIG_FILE):
-            print(f"❌ Error: '{CONFIG_FILE}' exists but is a DIRECTORY. Please remove it first.")
+            safe_print(f"[ERROR] '{CONFIG_FILE}' exists but is a DIRECTORY. Please remove it first.")
             return
-        print(f"✅ '{CONFIG_FILE}' already exists. Skipping generation.")
+        safe_print(f"[OK] '{CONFIG_FILE}' already exists. Skipping generation.")
     else:
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 yaml.dump(DEFAULT_CONFIG, f, default_flow_style=False, allow_unicode=True)
-            print(f"✅ Successfully created default '{CONFIG_FILE}'")
-            print("👉 Please edit it to fill in your WeCom credentials, or set them via Environment Variables.")
+            safe_print(f"[OK] Successfully created default '{CONFIG_FILE}'")
+            safe_print("[INFO] Please edit it to fill in your WeCom credentials, or set them via Environment Variables.")
         except Exception as e:
-            print(f"❌ Failed to create config file: {e}")
+            safe_print(f"[ERROR] Failed to create config file: {e}")
 
     # Check and create database file to prevent Docker directory mount issue
     DB_FILE = os.path.join(DATA_DIR, "wecom_messages.db")
     if os.path.exists(DB_FILE):
         if os.path.isdir(DB_FILE):
-            print(f"❌ Error: '{DB_FILE}' exists but is a DIRECTORY. Please remove it first.")
+            safe_print(f"[ERROR] '{DB_FILE}' exists but is a DIRECTORY. Please remove it first.")
         else:
-            print(f"✅ '{DB_FILE}' already exists. Skipping generation.")
+            safe_print(f"[OK] '{DB_FILE}' already exists. Skipping generation.")
     else:
         try:
             with open(DB_FILE, 'w') as f:
                 pass # Create empty file
-            print(f"✅ Successfully created empty database file '{DB_FILE}'")
+            safe_print(f"[OK] Successfully created empty database file '{DB_FILE}'")
         except Exception as e:
-            print(f"❌ Failed to create database file: {e}")
+            safe_print(f"[ERROR] Failed to create database file: {e}")
 
 
 if __name__ == "__main__":

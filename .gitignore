@@ -13,6 +13,14 @@
 /wecom_messages_backup_20260205_153658.db
 /wecom_messages_backup_verify.db
 /__pycache__
+/app/__pycache__/
+/app/**/__pycache__/
+*.py[cod]
+/app/logs/
+/data/config.yaml
+/data/*.db
+/data/*.sqlite
+/data/*.sqlite3
 /debug_paths.py
 /scripts/release.ps1
 /scripts/fix_db_schema.py

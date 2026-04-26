@@ -1,0 +1,42 @@
+wecom:
+  corp_id: ""
+  corp_secret: ""
+  token: ""
+  encoding_aes_key: ""
+  api_base_url: "https://qyapi.weixin.qq.com"
+  api_proxy_token: ""
+
+security:
+  secret_key: "change_me_in_prod"
+  algorithm: "HS256"
+  access_token_expire_minutes: 30
+
+logging:
+  level: "INFO"
+  rotation: "daily"
+  max_bytes: 10485760
+  backup_count: 7
+  log_dir: "app/logs"
+
+database:
+  url: "sqlite:////app/data/wecom_messages.db"
+
+storage:
+  media_path: "media_files"
+  s3_enabled: false
+  s3_endpoint_url: ""
+  s3_access_key: ""
+  s3_secret_key: ""
+  s3_bucket_name: ""
+  s3_region_name: ""
+  s3_presigned_expiration: 3600
+  s3_proxy_mode: true
+  local_retention_enabled: false
+  local_retention_days: 30
+
+rate_limit:
+  max_login_attempts: 5
+  login_timeout_minutes: 10
+
+ui:
+  show_debug_info: false

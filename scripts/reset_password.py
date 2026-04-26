@@ -63,13 +63,12 @@ def reset_admin_password():
         print("✅ 创建了新的管理员账户")
         
         db.commit()
-        
+
         print("✅ 管理员密码重置完成")
         print("========================================")
         print("🔑 新的登录凭证:")
-        print(f"   用户名: admin@example.com")
+        print("   用户名: admin@example.com")
         print(f"   密码: {random_password}")
-        print("========================================")
         print("⚠️  请复制密码，首次登录后系统会强制要求修改密码")
         print("⚠️  出于安全考虑，此密码只会显示一次！")
         print("========================================")

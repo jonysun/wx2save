@@ -106,10 +106,10 @@ def get_config(env_key, section, key, default=None):
 # 企业微信配置
 # ==========================================
 wecom_cfg = _config.get('wecom', {})
-CORP_ID = get_config("WECOM_CORP_ID", 'wecom', 'corp_id', "wwa63b837649300e8f")
-CORP_SECRET = get_config("WECOM_CORP_SECRET", 'wecom', 'corp_secret', "_5Blt0T1-9ceSMS-Wf7N29d9hqj54TbPXvbaikO8auc")
-TOKEN = get_config("WECOM_TOKEN", 'wecom', 'token', "OOCcdxsqinuB4Nw82qdFj5iKhp")
-ENCODING_AES_KEY = get_config("WECOM_ENCODING_AES_KEY", 'wecom', 'encoding_aes_key', "lJxY4WMTXhocR1K7vfO17hd0mzvE790vOX0YXEanUt2")
+CORP_ID = get_config("WECOM_CORP_ID", 'wecom', 'corp_id', "")
+CORP_SECRET = get_config("WECOM_CORP_SECRET", 'wecom', 'corp_secret', "")
+TOKEN = get_config("WECOM_TOKEN", 'wecom', 'token', "")
+ENCODING_AES_KEY = get_config("WECOM_ENCODING_AES_KEY", 'wecom', 'encoding_aes_key', "")
 # API 代理配置
 WECOM_API_BASE_URL = get_config("WECOM_API_BASE_URL", 'wecom', 'api_base_url', "https://qyapi.weixin.qq.com")
 # 移除末尾的斜杠(如果存在)
@@ -133,6 +133,20 @@ ADMIN_PASSWORD = get_config("ADMIN_PASSWORD", 'security', 'admin_password', None
 # ==========================================
 db_cfg = _config.get('database', {})
 DATABASE_URL = get_config("DATABASE_URL", 'database', 'url', f"sqlite:///{DATA_DIR}/wecom_messages.db")
+
+# 本地开发环境兼容：如果误使用了容器内路径，则自动映射回本地 data 目录
+if not os.path.exists('/app') and 'sqlite' in DATABASE_URL and '/app/data/' in DATABASE_URL:
+    try:
+        import re
+        match = re.search(r'[^/\\]+\.db$', DATABASE_URL)
+        db_name = match.group(0) if match else "wecom_messages.db"
+    except Exception:
+        db_name = "wecom_messages.db"
+
+    old_url = DATABASE_URL
+    DATABASE_URL = f"sqlite:///{DATA_DIR}/{db_name}"
+    logger.warning(f"[WARN] Detected container DB path in local environment: {old_url}")
+    logger.warning(f"[INFO] Automatically fixed DATABASE_URL to: {DATABASE_URL}")
 
 # 如果在Docker中运行（检测 /app 目录），且配置的URL看起来像是Windows路径或者没有指向 /app/data
 if os.path.exists('/app') and 'sqlite' in DATABASE_URL:
@@ -204,8 +218,8 @@ LOG_ROTATION = get_config("LOG_ROTATION", 'logging', 'rotation', 'daily')
 LOG_MAX_BYTES = int(get_config("LOG_MAX_BYTES", 'logging', 'max_bytes', 10485760))  # 10MB
 LOG_BACKUP_COUNT = int(get_config("LOG_BACKUP_COUNT", 'logging', 'backup_count', 7))
 
-logger.info(f"📊 Log Level: {LOG_LEVEL}")
-logger.info(f"📋 Log Rotation: {LOG_ROTATION}")
+logger.info(f"[INFO] Log Level: {LOG_LEVEL}")
+logger.info(f"[INFO] Log Rotation: {LOG_ROTATION}")
 
 # 日志路径（从环境变量或配置文件读取）
 LOG_DIR = get_config("LOG_DIR", 'logging', 'log_dir', 'app/logs')

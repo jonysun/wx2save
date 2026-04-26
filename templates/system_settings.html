@@ -127,7 +127,7 @@
                                         <label class="form-label">Token</label>
                                         <div class="input-group">
                                             <input type="password" class="form-control" name="token" id="wecom_token"
-                                                value="{{ config.wecom.token or '' }}">
+                                                value="" placeholder="{% if config.wecom.token_configured %}已配置，留空则保持不变{% else %}请输入 Token{% endif %}">
                                             <button class="btn btn-outline-secondary" type="button"
                                                 onclick="togglePassword('wecom_token')"><i
                                                     class="bi bi-eye"></i></button>
@@ -137,7 +137,7 @@
                                         <label class="form-label">EncodingAESKey</label>
                                         <div class="input-group">
                                             <input type="password" class="form-control" name="encoding_aes_key"
-                                                id="wecom_aes_key" value="{{ config.wecom.encoding_aes_key or '' }}">
+                                                id="wecom_aes_key" value="" placeholder="{% if config.wecom.encoding_aes_key_configured %}已配置，留空则保持不变{% else %}请输入 EncodingAESKey{% endif %}">
                                             <button class="btn btn-outline-secondary" type="button"
                                                 onclick="togglePassword('wecom_aes_key')"><i
                                                     class="bi bi-eye"></i></button>
@@ -147,7 +147,7 @@
                                         <label class="form-label">CorpSecret</label>
                                         <div class="input-group">
                                             <input type="password" class="form-control" name="corp_secret"
-                                                id="wecom_secret" value="{{ config.wecom.corp_secret or '' }}">
+                                                id="wecom_secret" value="" placeholder="{% if config.wecom.corp_secret_configured %}已配置，留空则保持不变{% else %}请输入 CorpSecret{% endif %}">
                                             <button class="btn btn-outline-secondary" type="button"
                                                 onclick="togglePassword('wecom_secret')"><i
                                                     class="bi bi-eye"></i></button>
@@ -167,7 +167,8 @@
                                     <div class="mb-3">
                                         <label for="api_proxy_token" class="form-label">Proxy Token (安全验证)</label>
                                         <input type="text" class="form-control" id="api_proxy_token"
-                                            name="api_proxy_token" value="{{ config.wecom.api_proxy_token or '' }}"
+                                            name="api_proxy_token" value=""
+                                            data-configured="{{ 'true' if config.wecom.api_proxy_token_configured else 'false' }}"
                                             placeholder="Optional custom header token">
                                         <div class="form-text">如果代理服务器配置了 Header 鉴权，请在此填写 Token (Header:
                                             X-Antigrv-Token)</div>
@@ -213,13 +214,13 @@
                                                 <label for="s3_access_key" class="form-label">Access Key</label>
                                                 <input type="text" class="form-control" id="s3_access_key"
                                                     name="s3_access_key"
-                                                    value="{{ config.storage.s3_access_key or '' }}">
+                                                    value="" placeholder="{% if config.storage.s3_access_key_configured %}已配置，留空则保持不变{% else %}请输入 Access Key{% endif %}">
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label for="s3_secret_key" class="form-label">Secret Key</label>
                                                 <input type="password" class="form-control" id="s3_secret_key"
                                                     name="s3_secret_key"
-                                                    value="{{ config.storage.s3_secret_key or '' }}">
+                                                    value="" placeholder="{% if config.storage.s3_secret_key_configured %}已配置，留空则保持不变{% else %}请输入 Secret Key{% endif %}">
                                             </div>
                                         </div>
                                         <div class="row">
@@ -429,6 +430,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const csrfToken = {{ csrf_token|tojson }};
+
         function togglePassword(fieldId) {
             var field = document.getElementById(fieldId);
             var icon = field.nextElementSibling.querySelector('i');
@@ -447,7 +450,10 @@
         document.getElementById('logoutBtn').addEventListener('click', async function (e) {
             e.preventDefault();
             try {
-                await fetch('/auth/logout', { method: 'POST' });
+                await fetch('/auth/logout', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-Token': csrfToken }
+                });
             } catch (err) {
                 console.error('Logout failed:', err);
             }
@@ -503,7 +509,10 @@
                 try {
                     var response = await fetch('/api/user/username', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
+                        },
                         body: JSON.stringify({
                             new_username: newUsername,
                             current_password: currentPassword
@@ -542,7 +551,10 @@
                 try {
                     var response = await fetch('/api/user/password', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
+                        },
                         body: JSON.stringify({
                             current_password: curPwd,
                             new_password: newPwd
@@ -584,7 +596,10 @@
                 try {
                     var response = await fetch('/api/settings/update', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
+                        },
                         body: JSON.stringify(payload)
                     });
                     var result = await response.json();
@@ -648,7 +663,10 @@
                     var response = await fetch('/api/storage/test', {
                         method: 'POST',
                         credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
+                        },
                         body: JSON.stringify({
                             s3_endpoint_url: s3Endpoint ? s3Endpoint.value : '',
                             s3_access_key: accessKeyVal,

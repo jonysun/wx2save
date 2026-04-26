@@ -8,6 +8,11 @@ import sys
 import threading
 import string  # 🔥 关键添加：用于密码生成
 from typing import List, Optional
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 from fastapi import FastAPI, Request, HTTPException, status, Depends, Response, Form, BackgroundTasks
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel
@@ -139,6 +144,42 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+SENSITIVE_CONFIG_FIELDS = {
+    "wecom": {"token", "encoding_aes_key", "corp_secret", "api_proxy_token"},
+    "storage": {"s3_access_key", "s3_secret_key"},
+}
+
+
+def build_safe_display_config(config: dict) -> dict:
+    """Return a copy of config with sensitive values removed from UI rendering."""
+    display_config = json.loads(json.dumps(config or {}))
+    for section, fields in SENSITIVE_CONFIG_FIELDS.items():
+        section_data = display_config.get(section, {})
+        if not isinstance(section_data, dict):
+            continue
+        for field in fields:
+            if field in section_data and section_data[field]:
+                section_data[field] = ""
+                section_data[f"{field}_configured"] = True
+            else:
+                section_data[f"{field}_configured"] = False
+    return display_config
+
+
+def merge_sensitive_config_values(setting_data: dict, current_config: dict) -> dict:
+    """Preserve stored secrets when the UI intentionally submits blank sensitive fields."""
+    merged = json.loads(json.dumps(setting_data or {}))
+    for section, fields in SENSITIVE_CONFIG_FIELDS.items():
+        section_data = merged.get(section)
+        current_section = (current_config or {}).get(section, {})
+        if not isinstance(section_data, dict) or not isinstance(current_section, dict):
+            continue
+        for field in fields:
+            if section_data.get(field, "") == "" and current_section.get(field):
+                section_data[field] = current_section[field]
+    return merged
 
 
 # ----------------------
@@ -393,18 +434,29 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 @app.get("/media/{file_path:path}")
-async def secure_media_access(request: Request, file_path: str):
+async def secure_media_access(
+    request: Request,
+    file_path: str
+):
     """带鉴权的媒体文件访问 (用于图片/视频预览)"""
     not_found_exception = HTTPException(status_code=404, detail="File not found")
-    
+
     token = request.session.get("access_token") or request.cookies.get("access_token")
     if not token:
         raise not_found_exception
-        
+
+    db = SessionLocal()
     try:
-        jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except:
-        raise not_found_exception
+        try:
+            email, token_version = await get_current_user_from_token(token)
+        except Exception:
+            raise not_found_exception
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user or not user.is_active or token_version is None or token_version != user.token_version:
+            raise not_found_exception
+    finally:
+        db.close()
 
     # 防止路径遍历 (Path Traversal Protection)
     # 1. Basic check for '..'
@@ -429,8 +481,13 @@ async def secure_media_access(request: Request, file_path: str):
 
 
 @app.post("/api/messages/batch/delete")
-async def batch_delete_messages(request: Request):
+async def batch_delete_messages(request: Request, current_user: User = Depends(get_current_active_user)):
     """批量删除消息"""
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="需要管理员权限")
+
+    validate_csrf(request)
+
     data = await request.json()
     msg_ids = data.get("msg_ids", [])
     delete_files = data.get("delete_files", False)
@@ -469,8 +526,10 @@ async def batch_delete_messages(request: Request):
         db.close()
 
 @app.post("/api/messages/batch/download")
-async def batch_download_messages(request: Request):
+async def batch_download_messages(request: Request, current_user: User = Depends(get_current_active_user)):
     """批量下载 (打包成ZIP)"""
+    validate_csrf(request)
+
     data = await request.json()
     msg_ids = data.get("msg_ids", [])
      
@@ -531,8 +590,10 @@ async def batch_download_messages(request: Request):
         db.close()
 
 @app.post("/api/messages/{msg_id}/retry_download")
-async def retry_download_message(request: Request, msg_id: str):
+async def retry_download_message(request: Request, msg_id: str, current_user: User = Depends(get_current_active_user)):
     """重试下载消息媒体文件"""
+    validate_csrf(request)
+
     db = SessionLocal()
     try:
         message = db.query(Message).filter(Message.msgid == msg_id).first()
@@ -582,6 +643,8 @@ async def retry_download_message(request: Request, msg_id: str):
         thread.start()
         
         return {"status": "success", "message": "Download task started"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Retry download failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -703,6 +766,15 @@ async def get_current_active_user(
     return user
 
 
+def validate_csrf(request: Request):
+    """Validate session-backed CSRF token for state-changing requests."""
+    csrf_token = request.headers.get("X-CSRF-Token")
+    session_csrf = request.session.get("csrf_token") if hasattr(request, "session") else None
+    if not csrf_token or not session_csrf or csrf_token != session_csrf:
+        logger.warning(f"❌ CSRF validation failed: header={csrf_token}, session={session_csrf}")
+        raise HTTPException(status_code=403, detail="Invalid CSRF token")
+
+
 # ----------------------
 # 应用启动初始化
 # ----------------------
@@ -757,9 +829,8 @@ async def startup_event():
             logger.info("✅ 管理员账户初始化完成")
             logger.info("========================================")
             logger.info("🔑 首次登录凭证:")
-            logger.info(f"   用户名: admin@example.com")
+            logger.info("   用户名: admin@example.com")
             logger.info(f"   密码: {random_password}")
-            logger.info("========================================")
             logger.info("⚠️  请复制密码，首次登录后系统会强制要求修改密码")
             logger.info("⚠️  出于安全考虑，此密码只会显示一次！")
             logger.info("========================================")
@@ -1349,6 +1420,7 @@ async def dashboard(request: Request):
                 "last_sync_time": last_sync_time_str,
                 "user": {"email": email, "first_login": False},
                 "customer_map": customer_map, # 传递给模板
+                "csrf_token": request.session.get('csrf_token'),
                 "version": __version__
             })
         finally:
@@ -1375,19 +1447,10 @@ async def messages_page(
     download_status: Optional[str] = None,
     search: Optional[str] = None,
     customer_id: Optional[str] = None,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """消息列表页面"""
-    
-    # 鉴权
-    token = request.session.get("access_token") or request.cookies.get("access_token")
-    if not token:
-        return RedirectResponse(url="/login")
-        
-    try:
-        await get_current_user_from_token(token)
-    except:
-        return RedirectResponse(url="/login")
 
     # page_size passed from query param
     query = db.query(Message)
@@ -1476,6 +1539,7 @@ async def messages_page(
         "search": search,
         "customer_id": customer_id,
         "page_size": page_size,
+        "csrf_token": request.session.get('csrf_token'),
         "version": __version__
     })
 
@@ -1793,20 +1857,21 @@ async def test_storage_connection(
         return {"success": False, "message": str(e)}
 
 @app.get("/system/settings", response_class=HTMLResponse)
-async def system_settings_page(request: Request):
+async def system_settings_page(
+    request: Request,
+    current_user: User = Depends(get_current_active_user)
+):
     """系统设置页"""
     # 加载当前配置 (从内存中config模块读取)
     from app.core.config import _config, CALLBACK_STATUS
 
-    token = request.session.get("access_token") or request.cookies.get("access_token")
-    if not token:
-        return RedirectResponse(url="/login?error=Session expired", status_code=303)
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="需要管理员权限")
 
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-    except Exception:
-        return RedirectResponse(url="/login?error=Invalid session", status_code=303)
+    csrf_token = request.session.get('csrf_token')
+    if not csrf_token:
+        csrf_token = secrets.token_urlsafe(32)
+        request.session['csrf_token'] = csrf_token
 
     db_status = "ok"
     try:
@@ -1841,7 +1906,7 @@ async def system_settings_page(request: Request):
     # 简单起见，我们构造一个 config 字典传给模板
     # 加载当前配置
     # 构建显示用的配置副本
-    display_config = _config.copy()
+    display_config = build_safe_display_config(_config)
     
     # 简单的回调状态摘要
     callback_info = {
@@ -1859,98 +1924,72 @@ async def system_settings_page(request: Request):
         "s3_msg": s3_msg,
         "s3_status": s3_status,
         "s3_msg": s3_msg,
-        "user": {"email": email, "first_login": False},
+        "user": {"email": current_user.email, "username": current_user.email, "first_login": False},
+        "csrf_token": csrf_token,
         "version": __version__
     })
 
 @app.post("/api/settings/update")
 async def api_system_settings_update(
     request: Request,
-    setting_data: dict
+    setting_data: dict,
+    current_user: User = Depends(get_current_active_user)
 ):
     """更新系统设置 (JSON API) - 支持热加载"""
-    token = request.session.get("access_token") or request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=401, detail="Untitled")
+    try:
+        if not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="需要管理员权限")
 
-    # 简单判断如果不包含 wecom/storage 顶层key，且包含 corp_id，则认为是旧版wecom配置
-    if 'wecom' not in setting_data and 'storage' not in setting_data and 'corp_id' in setting_data:
-        success = save_config({"wecom": setting_data})
-    else:
-        # 新版通用配置 (包含 wecom 或 storage 键)
-        success = save_config(setting_data)
-    
-    if success:
-        # === 热加载：保存成功后立即刷新内存中的配置 ===
-        try:
-            from app.core.config import reload_config
-            from app.services import reload_wecom_config
-            from app.services.wecom_service import reload_wecom_service_config
-            from app.services.storage_service import storage as _storage
+        validate_csrf(request)
 
-            # 1. 刷新 config.py 模块级变量
-            reload_config()
-            # 2. 刷新 services/__init__.py 中的 WeCom 变量 + 清空 token 缓存
-            reload_wecom_config()
-            # 3. 刷新 wecom_service.py 中的 WeCom 变量
-            reload_wecom_service_config()
-            # 4. 重建 S3 client (如果启用)
-            _storage.reload()
+        if 'wecom' not in setting_data and 'storage' not in setting_data and 'corp_id' in setting_data:
+            setting_data = {"wecom": setting_data}
 
-            logger.info("✅ Hot reload completed: all modules refreshed.")
-            return JSONResponse({"status": "success", "message": "配置已保存并生效（无需重启）。"})
-        except Exception as e:
-            logger.error(f"⚠️ Config saved but hot reload failed: {e}", exc_info=True)
-            return JSONResponse({"status": "success", "message": f"配置已保存，但热加载部分失败: {str(e)}。建议重启服务。"})
-    else:
-         raise HTTPException(status_code=500, detail="保存配置失败")
+        setting_data = merge_sensitive_config_values(setting_data, _config)
+
+        # 简单判断如果不包含 wecom/storage 顶层key，且包含 corp_id，则认为是旧版wecom配置
+        if 'wecom' not in setting_data and 'storage' not in setting_data and 'corp_id' in setting_data:
+            success = save_config({"wecom": setting_data})
+        else:
+            success = save_config(setting_data)
+        
+        if success:
+            try:
+                from app.core.config import reload_config
+                from app.services import reload_wecom_config
+                from app.services.wecom_service import reload_wecom_service_config
+                from app.services.storage_service import storage as _storage
+
+                reload_config()
+                reload_wecom_config()
+                reload_wecom_service_config()
+                _storage.reload()
+
+                logger.info("✅ Hot reload completed: all modules refreshed.")
+                return JSONResponse({"status": "success", "message": "配置已保存并生效（无需重启）。"})
+            except Exception as e:
+                logger.error(f"⚠️ Config saved but hot reload failed: {e}", exc_info=True)
+                return JSONResponse({"status": "success", "message": f"配置已保存，但热加载部分失败: {str(e)}。建议重启服务。"})
+
+        raise HTTPException(status_code=500, detail="保存配置失败")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Settings update failed: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
 @app.post("/api/system/restart")
 async def restart_system(request: Request):
     """重启系统 - 触发容器/进程重启"""
-    token = request.session.get("access_token") or request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    try:
-        # 验证token
-        jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    logger.info("🔄 System restart requested by user")
-    
-    # 启动异步任务在2秒后退出进程
-    async def delayed_exit():
-        import asyncio
-        await asyncio.sleep(2)  # 给客户端足够时间接收响应
-        logger.info("🛑 Shutting down for restart...")
-        os._exit(1)  # 退出进程（使用状态码1触发Docker重启策略）
-    
-    import asyncio
-    asyncio.create_task(delayed_exit())
-    
-    return JSONResponse({
-        "status": "success", 
-        "message": "系统将在2秒后重启，请稍候..."
-    })
+    raise HTTPException(status_code=410, detail="Deprecated restart endpoint")
 
 
 # ----------------------
 # 消息详情页
 # ----------------------
 @app.get("/messages/{msg_id}", response_class=HTMLResponse)
-async def message_detail(request: Request, msg_id: str):
+async def message_detail(request: Request, msg_id: str, current_user: User = Depends(get_current_active_user)):
     """消息详情页"""
-    token = request.session.get("access_token") or request.cookies.get("access_token")
-    if not token:
-        return RedirectResponse(url="/login?error=Session expired", status_code=303)
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-    except Exception:
-        return RedirectResponse(url="/login?error=Invalid session", status_code=303)
 
     db = SessionLocal()
     try:
@@ -2004,8 +2043,9 @@ async def message_detail(request: Request, msg_id: str):
             "message": message,
             "nickname": nickname, # Pass nickname
             "raw_data": parsed_extra_data,
-            "user": {"email": email, "first_login": False},
+            "user": {"email": current_user.email, "first_login": False},
             "current_time": current_time,
+            "csrf_token": request.session.get('csrf_token'),
             "version": __version__
         })
     finally:
@@ -2016,23 +2056,19 @@ async def message_detail(request: Request, msg_id: str):
 # ----------------------
 
 @app.post("/api/files/generate_token/{msg_id}")
-async def generate_download_token(request: Request, msg_id: str):
+async def generate_download_token(
+    request: Request,
+    msg_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
     """生成一次性/限次下载令牌"""
     disposition = request.query_params.get('disposition', 'attachment') # attachment or inline
 
-    token = request.session.get("access_token") or request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(status_code=401, detail="Authentication required")
-        
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_email = payload.get("sub")
-    except:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    validate_csrf(request)
 
     db = SessionLocal()
     try:
-        user = db.query(User).filter(User.email == user_email).first()
+        user = db.query(User).filter(User.id == current_user.id).first()
         if not user:
              raise HTTPException(status_code=401, detail="User not found")
              
@@ -2098,10 +2134,6 @@ async def download_file(request: Request, token: str):
              msg = "Download limit reached"
              raise HTTPException(status_code=403, detail=msg)
 
-        # 更新计数
-        dt.current_downloads += 1
-        db.commit()
-        
         # 获取文件信息
         message = db.query(Message).filter(Message.id == dt.message_id).first()
         if not message or not message.media_path:
@@ -2184,6 +2216,8 @@ async def download_file(request: Request, token: str):
                   logger.info(f"☁️ Redirecting to S3 (Direct Mode) for {file_path}")
                   s3_url = storage.get_file_url(file_path)
                   if s3_url and s3_url.startswith("http"):
+                       dt.current_downloads += 1
+                       db.commit()
                        return RedirectResponse(url=s3_url)
                   else:
                        logger.warning(f"⚠️ Failed to get S3 URL in Direct Mode, falling back to Proxy Mode")
@@ -2365,6 +2399,8 @@ async def change_password(
     db: Session = Depends(get_db)
 ):
     """修改当前用户密码"""
+    validate_csrf(request)
+
     # 验证当前密码
     if not verify_password(password_data.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="当前密码错误")
@@ -2401,6 +2437,8 @@ async def change_username(
     db: Session = Depends(get_db)
 ):
     """修改用户名"""
+    validate_csrf(request)
+
     # 1. 验证当前密码
     if not verify_password(username_data.current_password, current_user.hashed_password):
         raise HTTPException(status_code=400, detail="当前密码错误")
@@ -2489,6 +2527,8 @@ async def restart_system(
 @app.post("/auth/logout")
 async def logout(request: Request, response: Response):
     """退出登录"""
+    validate_csrf(request)
+
     # 1. 尝试获取当前用户以进行清理（即使失败也不影响注销流程）
     try:
         token = request.session.get("access_token") or request.cookies.get("access_token")

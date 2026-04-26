@@ -20,10 +20,17 @@ __pycache__
 # Exclude logs
 logs
 *.log
+app/logs
 
 # Exclude local media files (mounted via volume instead)
 media_files
 media
+
+# Exclude local runtime data and secrets
+data/config.yaml
+data/*.db
+data/*.sqlite
+data/*.sqlite3
 
 # Exclude tests and scripts not needed for runtime
 tests
