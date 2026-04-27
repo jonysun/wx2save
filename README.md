@@ -77,11 +77,6 @@
         - TZ=Asia/Shanghai
         - LOG_DIR=/app/app/logs
         - DATABASE_URL=sqlite:////app/wecom_messages.db
-      healthcheck:
-        test: [ "CMD", "curl", "-f", "http://localhost:8000/login" ]
-        interval: 30s
-        timeout: 10s
-        retries: 3
       logging:
         driver: "json-file"
         options:
